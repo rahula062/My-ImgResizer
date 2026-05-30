@@ -1,0 +1,2233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PixelCraft — Image & PDF Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<script src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></script>
+<style>
+:root {
+  --bg-deep: #05050f;
+  --bg-dark: #0a0a1a;
+  --bg-card: #0f0f22;
+  --bg-card2: #13132a;
+  --border: #1e1e3a;
+  --border-glow: #7c3aed44;
+  --accent: #7c3aed;
+  --accent2: #a855f7;
+  --accent3: #c084fc;
+  --accent-dim: #7c3aed33;
+  --cyan: #22d3ee;
+  --cyan-dim: #22d3ee22;
+  --pink: #f0abfc;
+  --text: #e2e8f0;
+  --text-dim: #94a3b8;
+  --text-muted: #475569;
+  --success: #10b981;
+  --error: #ef4444;
+  --warn: #f59e0b;
+  --sidebar-w: 260px;
+  --font-display: 'Orbitron', monospace;
+  --font-body: 'Rajdhani', sans-serif;
+  --font-mono: 'Share Tech Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-deep);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-dark); }
+::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
+
+/* ── SIDEBAR ── */
+#sidebar {
+  position: fixed; top: 0; left: 0;
+  width: var(--sidebar-w); height: 100vh;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  z-index: 100;
+  transition: transform .3s ease;
+}
+.sidebar-logo {
+  padding: 24px 20px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.logo-text {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, var(--accent2), var(--cyan));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; 
+  letter-spacing: 2px;
+}
+.logo-sub { font-size: .7rem; color: var(--text-muted); letter-spacing: 3px; text-transform: uppercase; margin-top: 2px; font-family: var(--font-mono); }
+.sidebar-nav { flex: 1; overflow-y: auto; padding: 12px 0; }
+.nav-section { padding: 8px 16px 4px; font-size: .65rem; letter-spacing: 3px; text-transform: uppercase; color: var(--text-muted); font-family: var(--font-mono); }
+.nav-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 20px; cursor: pointer;
+  color: var(--text-dim); font-size: .95rem; font-weight: 500;
+  border-left: 2px solid transparent;
+  transition: all .2s;
+  position: relative;
+}
+.nav-item:hover { color: var(--text); background: var(--accent-dim); border-left-color: var(--accent2); }
+.nav-item.active { color: var(--accent3); background: var(--accent-dim); border-left-color: var(--accent); }
+.nav-item .icon { width: 20px; text-align: center; font-size: 1rem; flex-shrink: 0; }
+.nav-item .label { flex: 1; }
+.nav-badge { background: var(--accent); color: white; font-size: .6rem; padding: 1px 6px; border-radius: 8px; font-family: var(--font-mono); }
+.sidebar-footer { padding: 16px; border-top: 1px solid var(--border); font-size: .75rem; color: var(--text-muted); font-family: var(--font-mono); }
+
+/* ── MAIN ── */
+#main {
+  margin-left: var(--sidebar-w);
+  min-height: 100vh;
+  background: var(--bg-deep);
+}
+
+/* ── TOPBAR ── */
+#topbar {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(5,5,15,.85);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  height: 60px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.topbar-title { font-family: var(--font-display); font-size: .85rem; color: var(--text-dim); letter-spacing: 1px; }
+.topbar-badge { font-family: var(--font-mono); font-size: .7rem; color: var(--accent3); background: var(--accent-dim); padding: 3px 10px; border-radius: 12px; border: 1px solid var(--border-glow); }
+#hamburger { display: none; background: none; border: none; color: var(--text); font-size: 1.4rem; cursor: pointer; }
+
+/* ── PAGES ── */
+.page { display: none; padding: 32px; max-width: 1100px; margin: 0 auto; }
+.page.active { display: block; }
+
+/* ── HOME PAGE ── */
+.hero {
+  position: relative; overflow: hidden;
+  background: linear-gradient(135deg, var(--bg-card) 0%, #0d0d24 100%);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 64px 48px;
+  margin-bottom: 40px;
+  text-align: center;
+}
+.hero::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 60% 50% at 50% 0%, var(--accent-dim), transparent);
+  pointer-events: none;
+}
+.hero-grid-bg {
+  position: absolute; inset: 0;
+  background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: .3;
+  pointer-events: none;
+}
+.hero h1 {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  font-weight: 900;
+  background: linear-gradient(135deg, #fff 0%, var(--accent3) 50%, var(--cyan) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  letter-spacing: 6px;
+  position: relative;
+  line-height: 1.1;
+  margin-bottom: 16px;
+}
+.hero-sub {
+  color: var(--text-dim); font-size: 1.15rem; font-weight: 400;
+  position: relative; max-width: 500px; margin: 0 auto 32px;
+}
+.hero-stats {
+  display: flex; justify-content: center; gap: 40px;
+  position: relative; margin-top: 40px;
+}
+.stat { text-align: center; }
+.stat-num { font-family: var(--font-display); font-size: 1.8rem; color: var(--accent3); font-weight: 700; }
+.stat-lbl { font-size: .75rem; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; font-family: var(--font-mono); }
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+.feature-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px 20px;
+  cursor: pointer;
+  transition: all .25s;
+  position: relative;
+  overflow: hidden;
+}
+.feature-card::before {
+  content: ''; position: absolute;
+  inset: 0; opacity: 0;
+  background: radial-gradient(circle at top left, var(--accent-dim), transparent 60%);
+  transition: opacity .3s;
+}
+.feature-card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 8px 32px var(--accent-dim); }
+.feature-card:hover::before { opacity: 1; }
+.feature-card .fc-icon { font-size: 2rem; margin-bottom: 12px; display: block; }
+.feature-card .fc-name { font-family: var(--font-display); font-size: .75rem; font-weight: 700; color: var(--text); letter-spacing: 1px; margin-bottom: 6px; }
+.feature-card .fc-desc { font-size: .8rem; color: var(--text-muted); line-height: 1.4; }
+.feature-card .fc-badge { display: inline-block; font-size: .6rem; font-family: var(--font-mono); padding: 2px 8px; border-radius: 8px; margin-top: 10px; }
+.badge-purple { background: var(--accent-dim); color: var(--accent3); border: 1px solid var(--border-glow); }
+.badge-cyan { background: var(--cyan-dim); color: var(--cyan); border: 1px solid #22d3ee33; }
+
+/* ── SECTION HEADERS ── */
+.section-header { margin-bottom: 28px; }
+.section-header h2 {
+  font-family: var(--font-display); font-size: 1.4rem; font-weight: 700;
+  color: var(--text); letter-spacing: 2px;
+  display: flex; align-items: center; gap: 12px;
+}
+.section-header h2 .icon { color: var(--accent3); }
+.section-header p { color: var(--text-dim); margin-top: 6px; font-size: .95rem; }
+.divider { height: 1px; background: linear-gradient(90deg, var(--accent), transparent); margin: 12px 0 20px; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 20px;
+}
+.card-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+/* ── DROPZONE ── */
+.dropzone {
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  padding: 32px 20px;
+  text-align: center;
+  transition: all .25s;
+  background: var(--bg-card2);
+}
+.dropzone:hover, .dropzone.drag-over {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+/* hidden input — NOT overlaid, just hidden in DOM */
+.dz-input { display: none; }
+.dz-icon { font-size: 2.5rem; margin-bottom: 12px; display: block; }
+.dz-title { font-weight: 600; font-size: 1.05rem; color: var(--text); margin-bottom: 4px; }
+.dz-sub { font-size: .85rem; color: var(--text-muted); margin-bottom: 16px; }
+.dz-sub span { color: var(--accent3); }
+.dz-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 24px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff; border: none; border-radius: 8px;
+  font-family: var(--font-body); font-weight: 700; font-size: 1rem;
+  cursor: pointer; letter-spacing: .5px;
+  box-shadow: 0 4px 16px var(--accent-dim);
+  transition: all .2s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.dz-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px var(--border-glow); }
+.dz-btn:active { transform: scale(.97); }
+
+/* ── FORM ELEMENTS ── */
+label.lbl { display: block; font-size: .8rem; font-weight: 600; color: var(--text-dim); margin-bottom: 6px; letter-spacing: 1px; text-transform: uppercase; font-family: var(--font-mono); }
+input[type=number], input[type=text], select {
+  width: 100%; padding: 10px 14px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: .9rem;
+  transition: border-color .2s;
+  -webkit-appearance: none; appearance: none;
+}
+select option { background: var(--bg-card); }
+input[type=number]:focus, input[type=text]:focus, select:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+input[type=range] {
+  width: 100%; height: 6px;
+  -webkit-appearance: none; appearance: none;
+  background: var(--border);
+  border-radius: 3px;
+  outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px; height: 18px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 8px var(--accent);
+}
+input[type=color] {
+  width: 48px; height: 36px;
+  padding: 2px; background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: 6px; cursor: pointer;
+}
+
+.row { display: flex; gap: 16px; align-items: flex-end; margin-bottom: 16px; flex-wrap: wrap; }
+.row > * { flex: 1; min-width: 120px; }
+.row.tight { gap: 10px; }
+.mt16 { margin-top: 16px; }
+.mt12 { margin-top: 12px; }
+.mb16 { margin-bottom: 16px; }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 20px; border-radius: 8px;
+  font-family: var(--font-body); font-weight: 600; font-size: .95rem;
+  cursor: pointer; border: none; transition: all .2s;
+  letter-spacing: .5px;
+  white-space: nowrap;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: white;
+  box-shadow: 0 4px 16px var(--accent-dim);
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 24px var(--border-glow); }
+.btn-secondary { background: var(--bg-card2); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent3); }
+.btn-success { background: linear-gradient(135deg, #059669, #10b981); color: white; }
+.btn-sm { padding: 7px 14px; font-size: .85rem; }
+.btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+.btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+
+/* ── TOGGLE ── */
+.toggle-wrap { display: flex; align-items: center; gap: 10px; }
+.toggle { position: relative; width: 44px; height: 24px; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; inset: 0;
+  background: var(--border); border-radius: 24px; cursor: pointer;
+  transition: background .2s;
+}
+.toggle-slider::before {
+  content: ''; position: absolute;
+  width: 18px; height: 18px;
+  left: 3px; top: 3px;
+  background: white; border-radius: 50%;
+  transition: transform .2s;
+}
+.toggle input:checked + .toggle-slider { background: var(--accent); }
+.toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
+.toggle-lbl { font-size: .9rem; color: var(--text-dim); }
+
+/* ── PREVIEW BOX ── */
+.preview-wrap {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg-deep);
+  display: flex; align-items: center; justify-content: center;
+  min-height: 180px;
+  position: relative;
+}
+.preview-wrap img, .preview-wrap canvas { max-width: 100%; max-height: 300px; display: block; object-fit: contain; }
+.preview-label {
+  position: absolute; top: 8px; left: 8px;
+  background: rgba(0,0,0,.6); backdrop-filter: blur(8px);
+  padding: 3px 10px; border-radius: 6px;
+  font-size: .7rem; font-family: var(--font-mono); color: var(--accent3);
+  border: 1px solid var(--border-glow);
+}
+.preview-info {
+  position: absolute; bottom: 8px; right: 8px;
+  background: rgba(0,0,0,.6); backdrop-filter: blur(8px);
+  padding: 3px 10px; border-radius: 6px;
+  font-size: .7rem; font-family: var(--font-mono); color: var(--cyan);
+}
+
+/* ── SIZE BAR ── */
+.size-compare {
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-top: 16px;
+}
+.size-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-family: var(--font-mono); font-size: .85rem; }
+.size-bar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin-bottom: 4px; }
+.size-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 4px; transition: width .4s ease; }
+.size-bar-fill.target { background: linear-gradient(90deg, var(--success), #34d399); }
+
+/* ── CROP CANVAS ── */
+#crop-canvas-wrap {
+  position: relative;
+  display: inline-block;
+  cursor: crosshair;
+  user-select: none;
+}
+#crop-canvas { display: block; max-width: 100%; }
+#crop-overlay {
+  position: absolute; pointer-events: none;
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 9999px rgba(0,0,0,.55);
+}
+.crop-handles span {
+  position: absolute; width: 10px; height: 10px;
+  background: var(--accent);
+  border-radius: 50%;
+}
+
+/* ── PDF LIST ── */
+.pdf-list { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+.pdf-item {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  cursor: grab;
+  transition: border-color .2s;
+}
+.pdf-item:hover { border-color: var(--accent); }
+.pdf-item.dragging { opacity: .5; cursor: grabbing; }
+.pdf-item .drag-icon { color: var(--text-muted); }
+.pdf-item .file-name { flex: 1; font-size: .9rem; font-family: var(--font-mono); }
+.pdf-item .file-size { font-size: .8rem; color: var(--text-muted); }
+.pdf-item .remove-btn { background: none; border: none; color: var(--error); cursor: pointer; font-size: 1.1rem; padding: 2px 6px; }
+
+/* ── RATIO SELECTOR ── */
+.ratio-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.ratio-btn {
+  padding: 7px 14px;
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: .8rem;
+  cursor: pointer;
+  transition: all .2s;
+}
+.ratio-btn:hover, .ratio-btn.active {
+  border-color: var(--accent);
+  color: var(--accent3);
+  background: var(--accent-dim);
+}
+
+/* ── PAD COLOR ── */
+.pad-colors { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pad-swatch {
+  width: 32px; height: 32px;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color .2s;
+}
+.pad-swatch.active { border-color: var(--accent); }
+.pad-swatch.white { background: #fff; }
+.pad-swatch.black { background: #000; }
+.pad-swatch.transparent-swatch {
+  background: repeating-conic-gradient(#aaa 0% 25%, #fff 0% 50%) 0 0 / 12px 12px;
+}
+
+/* ── TOAST ── */
+#toast-container {
+  position: fixed; top: 24px; right: 24px; z-index: 9999;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.toast {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.4);
+  animation: slideIn .3s ease;
+  font-size: .9rem;
+  min-width: 280px; max-width: 360px;
+  backdrop-filter: blur(16px);
+}
+.toast.success { border-left: 3px solid var(--success); }
+.toast.error { border-left: 3px solid var(--error); }
+.toast.info { border-left: 3px solid var(--accent); }
+.toast .toast-icon { font-size: 1.2rem; flex-shrink: 0; }
+.toast .toast-msg { flex: 1; }
+@keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes slideOut { to { transform: translateX(100px); opacity: 0; } }
+
+/* ── SPINNER ── */
+.spinner-overlay {
+  position: fixed; inset: 0; z-index: 9998;
+  background: rgba(5,5,15,.8);
+  backdrop-filter: blur(4px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 16px;
+}
+.spinner {
+  width: 56px; height: 56px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-right-color: var(--accent2);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner-text { font-family: var(--font-display); font-size: .8rem; color: var(--accent3); letter-spacing: 2px; }
+
+/* ── MISC ── */
+.tag { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: .7rem; font-family: var(--font-mono); }
+.tag-kb { background: var(--cyan-dim); color: var(--cyan); border: 1px solid #22d3ee33; }
+.tag-px { background: var(--accent-dim); color: var(--accent3); border: 1px solid var(--border-glow); }
+.info-box { background: var(--bg-card2); border: 1px solid var(--border-glow); border-radius: 8px; padding: 12px 16px; font-size: .85rem; color: var(--text-dim); line-height: 1.6; margin-top: 12px; }
+.info-box strong { color: var(--accent3); }
+.empty-state { text-align: center; padding: 32px; color: var(--text-muted); font-size: .9rem; }
+.mt8 { margin-top: 8px; } .mt12 { margin-top: 12px; } .mt16 { margin-top: 16px; } .mt20 { margin-top: 20px; }
+.mb8 { margin-bottom: 8px; } .mb16 { margin-bottom: 16px; }
+.flex-center { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.img-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 16px; }
+.img-thumb { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; position: relative; }
+.img-thumb img { width: 100%; display: block; }
+.img-thumb .dl-btn { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,.7); padding: 6px; text-align: center; font-size: .75rem; cursor: pointer; color: var(--accent3); display: none; }
+.img-thumb:hover .dl-btn { display: block; }
+
+/* ── MOBILE ── */
+#mobile-nav {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  z-index: 100;
+  padding: 8px 0;
+  gap: 0;
+  justify-content: space-around;
+}
+.mob-nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 12px; cursor: pointer; color: var(--text-muted); font-size: .65rem; font-family: var(--font-mono); transition: color .2s; }
+.mob-nav-item .icon { font-size: 1.2rem; }
+.mob-nav-item.active, .mob-nav-item:hover { color: var(--accent3); }
+
+@media (max-width: 768px) {
+  #sidebar { transform: translateX(-100%); }
+  #sidebar.open { transform: translateX(0); }
+  #main { margin-left: 0; }
+  .page { padding: 16px; padding-bottom: 80px; }
+  #topbar { padding: 0 16px; }
+  #hamburger { display: block; }
+  #mobile-nav { display: flex; }
+  .card-2col { grid-template-columns: 1fr; }
+  .hero { padding: 40px 24px; }
+  .hero-stats { gap: 24px; }
+  .features-grid { grid-template-columns: repeat(2, 1fr); }
+  #toast-container { top: 12px; right: 12px; left: 12px; }
+  .toast { min-width: unset; }
+  .sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 99; display: none; }
+  .sidebar-overlay.open { display: block; }
+}
+@media (max-width: 400px) {
+  .features-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR OVERLAY (mobile) -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-text">PIXEL<span style="color:var(--cyan)">CRAFT</span></div>
+    <div class="logo-sub">Image &amp; PDF Studio</div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-section">Main</div>
+    <div class="nav-item active" onclick="goTo('home')"><span class="icon">🏠</span><span class="label">Home</span></div>
+    <div class="nav-section">Image Tools</div>
+    <div class="nav-item" onclick="goTo('resize')"><span class="icon">↔️</span><span class="label">Resize Image</span></div>
+    <div class="nav-item" onclick="goTo('crop')"><span class="icon">✂️</span><span class="label">Crop Image</span><span class="nav-badge">HOT</span></div>
+    <div class="nav-item" onclick="goTo('compress-img')"><span class="icon">📦</span><span class="label">Compress Image</span></div>
+    <div class="nav-item" onclick="goTo('convert')"><span class="icon">🔄</span><span class="label">Convert Format</span></div>
+    <div class="nav-item" onclick="goTo('passport')"><span class="icon">🪪</span><span class="label">Passport Photo</span></div>
+    <div class="nav-item" onclick="goTo('increase-kb')"><span class="icon">📈</span><span class="label">Increase Size (KB)</span></div>
+    <div class="nav-item" onclick="goTo('remove-bg')"><span class="icon">🪄</span><span class="label">Remove Background</span></div>
+    <div class="nav-item" onclick="goTo('enhance')"><span class="icon">✨</span><span class="label">Enhance Quality</span></div>
+    <div class="nav-section">PDF Tools</div>
+    <div class="nav-item" onclick="goTo('merge-pdf')"><span class="icon">🗂️</span><span class="label">Merge PDFs</span></div>
+    <div class="nav-item" onclick="goTo('pdf-to-img')"><span class="icon">🖼️</span><span class="label">PDF to Images</span></div>
+    <div class="nav-item" onclick="goTo('compress-pdf')"><span class="icon">🗜️</span><span class="label">Compress PDF</span></div>
+  </div>
+  <div class="sidebar-footer">
+    v2.0 · Client-Side · No Upload
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div id="main">
+  <div id="topbar">
+    <button id="hamburger" onclick="toggleSidebar()">☰</button>
+    <div class="topbar-title" id="topbar-title">Home</div>
+    <div class="topbar-badge">100% Client-Side</div>
+  </div>
+
+  <!-- ─── HOME ─── -->
+  <div class="page active" id="page-home">
+    <div class="hero">
+      <div class="hero-grid-bg"></div>
+      <h1>PIXEL<br>CRAFT</h1>
+      <p class="hero-sub">Professional image &amp; PDF tools — all in your browser. No uploads, no servers, no limits.</p>
+      <div class="hero-stats">
+        <div class="stat"><div class="stat-num">11</div><div class="stat-lbl">Tools</div></div>
+        <div class="stat"><div class="stat-num">∞</div><div class="stat-lbl">Files</div></div>
+        <div class="stat"><div class="stat-num">0</div><div class="stat-lbl">Uploads</div></div>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <h2><span class="icon">⚡</span> All Tools</h2>
+      <p>Click any tool below to get started</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card" onclick="goTo('resize')">
+        <span class="fc-icon">↔️</span>
+        <div class="fc-name">Resize Image</div>
+        <div class="fc-desc">Set exact pixel dimensions with aspect ratio lock</div>
+        <span class="fc-badge badge-purple">Canvas API</span>
+      </div>
+      <div class="feature-card" onclick="goTo('crop')">
+        <span class="fc-icon">✂️</span>
+        <div class="fc-name">Crop Image</div>
+        <div class="fc-desc">Free, fixed ratios, or pad-to-ratio with custom colors</div>
+        <span class="fc-badge badge-cyan">Featured</span>
+      </div>
+      <div class="feature-card" onclick="goTo('compress-img')">
+        <span class="fc-icon">📦</span>
+        <div class="fc-name">Compress Image</div>
+        <div class="fc-desc">Quality slider with live size comparison</div>
+        <span class="fc-badge badge-purple">JPG/PNG/WEBP</span>
+      </div>
+      <div class="feature-card" onclick="goTo('convert')">
+        <span class="fc-icon">🔄</span>
+        <div class="fc-name">Convert Format</div>
+        <div class="fc-desc">Convert between JPG, PNG, WEBP, BMP, GIF</div>
+        <span class="fc-badge badge-purple">5 Formats</span>
+      </div>
+      <div class="feature-card" onclick="goTo('passport')">
+        <span class="fc-icon">🪪</span>
+        <div class="fc-name">Passport Photo</div>
+        <div class="fc-desc">Auto-resize to country-specific passport dimensions</div>
+        <span class="fc-badge badge-cyan">10+ Countries</span>
+      </div>
+      <div class="feature-card" onclick="goTo('increase-kb')">
+        <span class="fc-icon">📈</span>
+        <div class="fc-name">Increase Size</div>
+        <div class="fc-desc">Boost image file size to a target KB</div>
+        <span class="fc-badge badge-purple">Target KB</span>
+      </div>
+      <div class="feature-card" onclick="goTo('remove-bg')">
+        <span class="fc-icon">🪄</span>
+        <div class="fc-name">Remove BG</div>
+        <div class="fc-desc">Canvas-based background removal with tolerance control</div>
+        <span class="fc-badge badge-cyan">No API Key</span>
+      </div>
+      <div class="feature-card" onclick="goTo('enhance')">
+        <span class="fc-icon">✨</span>
+        <div class="fc-name">Enhance Quality</div>
+        <div class="fc-desc">Sharpen and upscale low-quality images</div>
+        <span class="fc-badge badge-purple">Filter Engine</span>
+      </div>
+      <div class="feature-card" onclick="goTo('merge-pdf')">
+        <span class="fc-icon">🗂️</span>
+        <div class="fc-name">Merge PDFs</div>
+        <div class="fc-desc">Drag to reorder and merge multiple PDFs</div>
+        <span class="fc-badge badge-cyan">pdf-lib</span>
+      </div>
+      <div class="feature-card" onclick="goTo('pdf-to-img')">
+        <span class="fc-icon">🖼️</span>
+        <div class="fc-name">PDF to Images</div>
+        <div class="fc-desc">Convert each PDF page to JPG/PNG images</div>
+        <span class="fc-badge badge-cyan">pdf.js + ZIP</span>
+      </div>
+      <div class="feature-card" onclick="goTo('compress-pdf')">
+        <span class="fc-icon">🗜️</span>
+        <div class="fc-name">Compress PDF</div>
+        <div class="fc-desc">Reduce PDF file size</div>
+        <span class="fc-badge badge-purple">pdf-lib</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── RESIZE ─── -->
+  <div class="page" id="page-resize">
+    <div class="section-header">
+      <h2><span class="icon">↔️</span> Resize Image</h2>
+      <div class="divider"></div>
+      <p>Resize to exact pixel dimensions. Lock aspect ratio to avoid distortion.</p>
+    </div>
+    <div class="card">
+      <div class="dropzone" id="resize-dz">
+        <input type="file" accept="image/*" id="resize-file" class="dz-input" onchange="handleResizeUpload(event)">
+        <span class="dz-icon">🖼️</span>
+        <div class="dz-title">Resize Image</div>
+        <div class="dz-sub">JPG, PNG, WEBP, GIF supported</div>
+        <button class="dz-btn" onclick="document.getElementById('resize-file').click()">📁 Choose Image</button>
+      </div>
+    </div>
+
+    <div class="card" id="resize-controls" style="display:none">
+      <!-- Dimensions Row -->
+      <div class="row">
+        <div>
+          <label class="lbl">Width (px)</label>
+          <input type="number" id="resize-w" min="1" max="10000" oninput="syncAspect('w')">
+        </div>
+        <div style="display:flex;align-items:flex-end;padding-bottom:2px;flex:0">
+          <div class="toggle-wrap">
+            <label class="toggle"><input type="checkbox" id="aspect-lock" checked><span class="toggle-slider"></span></label>
+            <span style="font-size:1.4rem" title="Lock Aspect Ratio">🔒</span>
+          </div>
+        </div>
+        <div>
+          <label class="lbl">Height (px)</label>
+          <input type="number" id="resize-h" min="1" max="10000" oninput="syncAspect('h')">
+        </div>
+      </div>
+
+      <!-- Format + Quality Row -->
+      <div class="row" style="margin-top:4px">
+        <div>
+          <label class="lbl">Output Format</label>
+          <select id="resize-format" onchange="onResizeFormatChange()">
+            <option value="image/jpeg">JPG</option>
+            <option value="image/png">PNG</option>
+            <option value="image/webp">WEBP</option>
+          </select>
+        </div>
+        <div style="flex:2" id="resize-quality-wrap">
+          <label class="lbl">Quality: <span id="resize-q-val" style="color:var(--accent3)">92%</span></label>
+          <input type="range" id="resize-quality" min="1" max="100" value="92" oninput="document.getElementById('resize-q-val').textContent=this.value+'%'; updateResizePreview()">
+        </div>
+      </div>
+
+      <!-- Target KB Option -->
+      <div style="margin-bottom:16px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+          <label class="toggle"><input type="checkbox" id="resize-target-kb-toggle" onchange="toggleTargetKb()"><span class="toggle-slider"></span></label>
+          <span class="toggle-lbl" style="font-weight:600;">🎯 Target File Size (KB)</span>
+        </div>
+        <div id="resize-target-kb-wrap" style="display:none;max-width:320px;">
+          <div class="row tight">
+            <div>
+              <label class="lbl">Target KB</label>
+              <input type="number" id="resize-target-kb" min="10" max="10000" value="200" placeholder="e.g. 200">
+            </div>
+            <div style="display:flex;align-items:flex-end">
+              <button class="btn btn-secondary btn-sm" onclick="applyTargetKb()">⚙️ Auto Quality</button>
+            </div>
+          </div>
+          <div style="font-size:.78rem;color:var(--text-muted);font-family:var(--font-mono);margin-top:4px;" id="resize-kb-hint"></div>
+        </div>
+      </div>
+
+      <!-- File Size Compare -->
+      <div class="size-compare" id="resize-size-compare" style="display:none">
+        <div class="size-row"><span>Original</span><span id="resize-orig-size-kb" class="tag tag-kb">—</span></div>
+        <div class="size-bar"><div class="size-bar-fill" style="width:100%"></div></div>
+        <div class="size-row"><span>Output (estimated)</span><span id="resize-out-size-kb" class="tag tag-kb">—</span></div>
+        <div class="size-bar"><div class="size-bar-fill target" id="resize-out-bar" style="width:50%"></div></div>
+        <div style="margin-top:8px;font-size:.8rem;color:var(--text-dim);font-family:var(--font-mono)" id="resize-savings-txt"></div>
+      </div>
+
+      <!-- Previews -->
+      <div class="card-2col mt16">
+        <div>
+          <div class="preview-wrap">
+            <div class="preview-label">ORIGINAL</div>
+            <img id="resize-orig" src="" alt="">
+            <div class="preview-info" id="resize-orig-info"></div>
+          </div>
+        </div>
+        <div>
+          <div class="preview-wrap">
+            <div class="preview-label">PREVIEW</div>
+            <canvas id="resize-preview"></canvas>
+            <div class="preview-info" id="resize-preview-info"></div>
+          </div>
+        </div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-secondary btn-sm" onclick="updateResizePreview()">🔄 Preview</button>
+        <button class="btn btn-primary" onclick="downloadResized()">⬇️ Download Resized</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── CROP ─── -->
+  <div class="page" id="page-crop">
+    <div class="section-header">
+      <h2><span class="icon">✂️</span> Crop Image</h2>
+      <div class="divider"></div>
+      <p>Drag to select crop area. Use "Pad to Ratio" to add padding instead of cropping.</p>
+    </div>
+    <div class="card">
+      <div class="dropzone" id="crop-dz">
+        <input type="file" accept="image/*" id="crop-file" class="dz-input" onchange="handleCropUpload(event)">
+        <span class="dz-icon">✂️</span>
+        <div class="dz-title">Crop Image</div>
+        <div class="dz-sub">Select area, set ratio, or pad to fit</div>
+        <button class="dz-btn" onclick="document.getElementById('crop-file').click()">📁 Choose Image</button>
+      </div>
+    </div>
+
+    <div id="crop-controls" style="display:none">
+      <div class="card">
+        <div class="mb16">
+          <label class="lbl">Crop Ratio</label>
+          <div class="ratio-btns" id="ratio-btns">
+            <button class="ratio-btn active" data-ratio="free" onclick="setRatio('free',this)">Free</button>
+            <button class="ratio-btn" data-ratio="1:1" onclick="setRatio('1:1',this)">1:1</button>
+            <button class="ratio-btn" data-ratio="4:3" onclick="setRatio('4:3',this)">4:3</button>
+            <button class="ratio-btn" data-ratio="16:9" onclick="setRatio('16:9',this)">16:9</button>
+            <button class="ratio-btn" data-ratio="3:4" onclick="setRatio('3:4',this)">3:4</button>
+            <button class="ratio-btn" data-ratio="9:16" onclick="setRatio('9:16',this)">9:16</button>
+            <button class="ratio-btn" data-ratio="custom" onclick="setRatio('custom',this)">Custom</button>
+          </div>
+          <div id="custom-ratio-row" class="row" style="display:none;max-width:300px;">
+            <div><label class="lbl">W Ratio</label><input type="number" id="custom-rw" value="16" min="1" oninput="applyCustomRatio()"></div>
+            <div style="display:flex;align-items:flex-end;padding-bottom:10px;flex:0;color:var(--text-dim)">:</div>
+            <div><label class="lbl">H Ratio</label><input type="number" id="custom-rh" value="9" min="1" oninput="applyCustomRatio()"></div>
+          </div>
+        </div>
+
+        <div class="mb16">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+            <label class="toggle"><input type="checkbox" id="pad-toggle" onchange="togglePad()"><span class="toggle-slider"></span></label>
+            <span class="toggle-lbl" style="font-weight:600;">📐 Pad to Ratio <span style="color:var(--accent3)">(fit content, add padding)</span></span>
+          </div>
+          <div id="pad-options" style="display:none">
+            <label class="lbl">Padding Color</label>
+            <div class="pad-colors">
+              <div class="pad-swatch white active" onclick="setPadColor('#ffffff',this)" title="White"></div>
+              <div class="pad-swatch black" onclick="setPadColor('#000000',this)" title="Black"></div>
+              <div class="pad-swatch transparent-swatch" onclick="setPadColor('transparent',this)" title="Transparent"></div>
+              <input type="color" id="pad-custom-color" value="#7c3aed" oninput="setPadColorCustom(this.value)" title="Custom color">
+              <span style="font-size:.8rem;color:var(--text-muted);align-self:center;">Custom →</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="overflow-x:auto;">
+          <div id="crop-canvas-wrap">
+            <canvas id="crop-canvas"></canvas>
+            <div id="crop-overlay">
+              <div class="crop-handles">
+                <span style="top:-5px;left:-5px;cursor:nw-resize"></span>
+                <span style="top:-5px;right:-5px;cursor:ne-resize"></span>
+                <span style="bottom:-5px;left:-5px;cursor:sw-resize"></span>
+                <span style="bottom:-5px;right:-5px;cursor:se-resize"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:8px;font-size:.8rem;color:var(--text-muted);font-family:var(--font-mono)" id="crop-coords"></div>
+      </div>
+
+      <div class="card">
+        <div class="preview-wrap" style="min-height:200px">
+          <div class="preview-label">RESULT PREVIEW</div>
+          <canvas id="crop-result-canvas"></canvas>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-secondary btn-sm" onclick="refreshCropPreview()">🔄 Update Preview</button>
+          <button class="btn btn-primary" onclick="downloadCrop()">⬇️ Download</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── COMPRESS IMAGE ─── -->
+  <div class="page" id="page-compress-img">
+    <div class="section-header">
+      <h2><span class="icon">📦</span> Compress Image</h2>
+      <div class="divider"></div>
+      <p>Reduce image file size with a quality slider. See live size changes.</p>
+    </div>
+    <div class="card">
+      <div class="dropzone" id="cimg-dz">
+        <input type="file" accept="image/*" id="cimg-file" class="dz-input" onchange="handleCimgUpload(event)">
+        <span class="dz-icon">📦</span>
+        <div class="dz-title">Compress Image</div>
+        <div class="dz-sub">Reduce file size with quality control</div>
+        <button class="dz-btn" onclick="document.getElementById('cimg-file').click()">📁 Choose Image</button>
+      </div>
+    </div>
+    <div class="card" id="cimg-controls" style="display:none">
+      <div class="row">
+        <div>
+          <label class="lbl">Output Format</label>
+          <select id="cimg-format" onchange="updateCimgPreview()">
+            <option value="image/jpeg">JPG</option>
+            <option value="image/webp">WEBP</option>
+            <option value="image/png">PNG</option>
+          </select>
+        </div>
+        <div style="flex:2">
+          <label class="lbl">Quality: <span id="cimg-q-val" style="color:var(--accent3)">80%</span></label>
+          <input type="range" id="cimg-quality" min="1" max="100" value="80" oninput="document.getElementById('cimg-q-val').textContent=this.value+'%';updateCimgPreview()">
+        </div>
+      </div>
+      <div class="size-compare" id="cimg-size-compare">
+        <div class="size-row"><span>Original</span><span id="cimg-orig-size" class="tag tag-kb">—</span></div>
+        <div class="size-bar"><div class="size-bar-fill" id="cimg-orig-bar" style="width:100%"></div></div>
+        <div class="size-row"><span>Compressed</span><span id="cimg-new-size" class="tag tag-kb">—</span></div>
+        <div class="size-bar"><div class="size-bar-fill target" id="cimg-new-bar" style="width:0%"></div></div>
+        <div style="margin-top:8px;font-size:.8rem;color:var(--text-dim);font-family:var(--font-mono)" id="cimg-savings"></div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="downloadCimg()">⬇️ Download Compressed</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── CONVERT ─── -->
+  <div class="page" id="page-convert">
+    <div class="section-header">
+      <h2><span class="icon">🔄</span> Convert Image Format</h2>
+      <div class="divider"></div>
+      <p>Convert your image to any popular format instantly.</p>
+    </div>
+    <div class="card">
+      <div class="dropzone" id="conv-dz">
+        <input type="file" accept="image/*" id="conv-file" class="dz-input" onchange="handleConvUpload(event)">
+        <span class="dz-icon">🔄</span>
+        <div class="dz-title">Convert Format</div>
+        <div class="dz-sub">Any image → JPG, PNG, WEBP, GIF, BMP</div>
+        <button class="dz-btn" onclick="document.getElementById('conv-file').click()">📁 Choose Image</button>
+      </div>
+    </div>
+    <div class="card" id="conv-controls" style="display:none">
+      <label class="lbl">Output Format</label>
+      <div class="ratio-btns" id="conv-fmt-btns">
+        <button class="ratio-btn active" data-fmt="image/jpeg" onclick="setConvFmt('image/jpeg','jpg',this)">JPG</button>
+        <button class="ratio-btn" data-fmt="image/png" onclick="setConvFmt('image/png','png',this)">PNG</button>
+        <button class="ratio-btn" data-fmt="image/webp" onclick="setConvFmt('image/webp','webp',this)">WEBP</button>
+        <button class="ratio-btn" data-fmt="image/gif" onclick="setConvFmt('image/gif','gif',this)">GIF</button>
+        <button class="ratio-btn" data-fmt="image/bmp" onclick="setConvFmt('image/bmp','bmp',this)">BMP</button>
+      </div>
+      <div class="preview-wrap mt16">
+        <div class="preview-label">PREVIEW</div>
+        <img id="conv-preview" src="" alt="" style="max-height:250px">
+      </div>
+      <div class="info-box mt12" id="conv-info"></div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="downloadConvert()">⬇️ Download <span id="conv-ext-label">JPG</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── PASSPORT ─── -->
+  <div class="page" id="page-passport">
+    <div class="section-header">
+      <h2><span class="icon">🪪</span> Passport Size Photo</h2>
+      <div class="divider"></div>
+      <p>Resize your photo to official passport dimensions for any country.</p>
+    </div>
+    <div class="card">
+      <div class="dropzone" id="pass-dz">
+        <input type="file" accept="image/*" id="pass-file" class="dz-input" onchange="handlePassUpload(event)">
+        <span class="dz-icon">🪪</span>
+        <div class="dz-title">Passport Photo</div>
+        <div class="dz-sub">Auto-resize to official passport dimensions</div>
+        <button class="dz-btn" onclick="document.getElementById('pass-file').click()">📁 Choose Photo</button>
+      </div>
+    </div>
+    <div class="card" id="pass-controls" style="display:none">
+      <div class="row">
+        <div>
+          <label class="lbl">Country / Format</label>
+          <select id="pass-country" onchange="updatePassPreview()">
+            <option value="35x45">India / UK — 35×45mm</option>
+            <option value="50x50">USA — 2×2 inch (51×51mm)</option>
+            <option value="35x45">EU Standard — 35×45mm</option>
+            <option value="40x60">China — 33×48mm</option>
+            <option value="45x35">Canada — 50×70mm</option>
+            <option value="35x45">Australia — 35×45mm</option>
+            <option value="35x45">Japan — 35×45mm</option>
+            <option value="40x50">Germany — 35×45mm</option>
+            <option value="35x45">France — 35×45mm</option>
+            <option value="custom">Custom (mm)</option>
+          </select>
+        </div>
+        <div id="pass-custom-wrap" style="display:none;flex:1">
+          <label class="lbl">W × H (mm)</label>
+          <div style="display:flex;gap:8px">
+            <input type="number" id="pass-cw" value="35" min="10" oninput="updatePassPreview()">
+            <input type="number" id="pass-ch" value="45" min="10" oninput="updatePassPreview()">
+          </div>
+        </div>
+        <div>
+          <label class="lbl">DPI</label>
+          <select id="pass-dpi" onchange="updatePassPreview()">
+            <option value="300">300 (Print quality)</option>
+            <option value="96">96 (Screen)</option>
+            <option value="600">600 (High quality)</option>
+          </select>
+        </div>
+      </div>
+      <div class="card-2col mt16">
+        <div>
+          <div class="preview-wrap"><div class="preview-label">ORIGINAL</div><img id="pass-orig" src="" alt=""></div>
+        </div>
+        <div>
+          <div class="preview-wrap"><div class="preview-label">PASSPORT SIZE</div><canvas id="pass-canvas"></canvas></div>
+          <div class="info-box mt8" id="pass-info"></div>
+        </div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="downloadPassport()">⬇️ Download Passport Photo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── INCREASE KB ─── -->
+  <div class="page" id="page-increase-kb">
+    <div class="section-header">
+      <h2><span class="icon">📈</span> Increase Image Size (KB)</h2>
+      <div class="divider"></div>
+      <p>Boost your image file size to a minimum target KB value.</p>
+    </div>
+    <div class="card">
+      <div class="dropzone" id="ikb-dz">
+        <input type="file" accept="image/*" id="ikb-file" class="dz-input" onchange="handleIkbUpload(event)">
+        <span class="dz-icon">📈</span>
+        <div class="dz-title">Increase Image Size</div>
+        <div class="dz-sub">Boost file size to a target KB</div>
+        <button class="dz-btn" onclick="document.getElementById('ikb-file').click()">📁 Choose Image</button>
+      </div>
+    </div>
+    <div class="card" id="ikb-controls" style="display:none">
+      <div class="row" style="max-width:400px">
+        <div>
+          <label class="lbl">Target Size (KB)</label>
+          <input type="number" id="ikb-target" value="200" min="1" max="5000">
+        </div>
+        <div>
+          <label class="lbl">Scale Factor</label>
+          <input type="number" id="ikb-scale" value="1.5" min="1" max="10" step="0.1">
+        </div>
+      </div>
+      <div class="size-compare" id="ikb-compare">
+        <div class="size-row"><span>Current Size</span><span id="ikb-cur" class="tag tag-kb">—</span></div>
+        <div class="size-bar"><div class="size-bar-fill" id="ikb-cur-bar" style="width:30%"></div></div>
+        <div class="size-row"><span>Target Size</span><span id="ikb-tgt-lbl" class="tag tag-kb">—</span></div>
+        <div class="size-bar"><div class="size-bar-fill target" id="ikb-tgt-bar" style="width:60%"></div></div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="processIncreaseKb()">🚀 Generate &amp; Download</button>
+      </div>
+      <div class="info-box mt12">
+        <strong>How it works:</strong> The image is upscaled and re-encoded at maximum quality until the target file size is reached. Use this for platforms with a minimum file size requirement.
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── REMOVE BG ─── -->
+  <div class="page" id="page-remove-bg">
+    <div class="section-header">
+      <h2><span class="icon">🪄</span> Remove Background</h2>
+      <div class="divider"></div>
+      <p>Click a color on your image to remove that background. Works best with solid/uniform backgrounds.</p>
+    </div>
+    <div class="card">
+      <div class="dropzone" id="rbg-dz">
+        <input type="file" accept="image/*" id="rbg-file" class="dz-input" onchange="handleRbgUpload(event)">
+        <span class="dz-icon">🪄</span>
+        <div class="dz-title">Remove Background</div>
+        <div class="dz-sub">Click color to remove — best for solid BG</div>
+        <button class="dz-btn" onclick="document.getElementById('rbg-file').click()">📁 Choose Image</button>
+      </div>
+    </div>
+    <div class="card" id="rbg-controls" style="display:none">
+      <div class="info-box mb16">
+        <strong>Step 1:</strong> Click on the background color in your image below.<br>
+        <strong>Step 2:</strong> Adjust tolerance if needed.<br>
+        <strong>Step 3:</strong> Download as transparent PNG.
+      </div>
+      <div class="row" style="max-width:400px">
+        <div>
+          <label class="lbl">Tolerance: <span id="rbg-tol-val" style="color:var(--accent3)">30</span></label>
+          <input type="range" id="rbg-tolerance" min="0" max="100" value="30" oninput="document.getElementById('rbg-tol-val').textContent=this.value">
+        </div>
+        <div style="flex:0">
+          <label class="lbl">Selected Color</label>
+          <div id="rbg-color-preview" style="width:48px;height:36px;border-radius:6px;border:2px solid var(--border);background:#fff"></div>
+        </div>
+      </div>
+      <div class="card-2col mt16">
+        <div>
+          <div class="preview-label" style="position:relative;display:block;margin-bottom:6px;font-size:.7rem;font-family:var(--font-mono);color:var(--accent3)">CLICK TO SAMPLE COLOR</div>
+          <canvas id="rbg-input-canvas" style="max-width:100%;border-radius:8px;border:1px solid var(--border);cursor:crosshair" onclick="sampleBgColor(event)"></canvas>
+        </div>
+        <div>
+          <div class="preview-label" style="position:relative;display:block;margin-bottom:6px;font-size:.7rem;font-family:var(--font-mono);color:var(--accent3)">RESULT (transparent)</div>
+          <canvas id="rbg-output-canvas" style="max-width:100%;border-radius:8px;border:1px solid var(--border);background:repeating-conic-gradient(#222 0% 25%,#333 0% 50%) 0 0/20px 20px"></canvas>
+        </div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-secondary btn-sm" onclick="applyBgRemoval()">🪄 Apply Removal</button>
+        <button class="btn btn-primary" onclick="downloadRbg()">⬇️ Download PNG</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── ENHANCE ─── -->
+  <div class="page" id="page-enhance">
+    <div class="section-header">
+      <h2><span class="icon">✨</span> Enhance Image Quality</h2>
+      <div class="divider"></div>
+      <p>Upscale and apply sharpening filters to improve low-quality images.</p>
+    </div>
+    <div class="card">
+      <div class="dropzone" id="enh-dz">
+        <input type="file" accept="image/*" id="enh-file" class="dz-input" onchange="handleEnhUpload(event)">
+        <span class="dz-icon">✨</span>
+        <div class="dz-title">Enhance Quality</div>
+        <div class="dz-sub">Upscale + sharpen low-quality images</div>
+        <button class="dz-btn" onclick="document.getElementById('enh-file').click()">📁 Choose Image</button>
+      </div>
+    </div>
+    <div class="card" id="enh-controls" style="display:none">
+      <div class="row">
+        <div>
+          <label class="lbl">Enhancement Level: <span id="enh-level-val" style="color:var(--accent3)">2×</span></label>
+          <input type="range" id="enh-level" min="1" max="4" value="2" step="1" oninput="document.getElementById('enh-level-val').textContent=this.value+'×'">
+        </div>
+        <div>
+          <label class="lbl">Sharpness: <span id="enh-sharp-val" style="color:var(--accent3)">50%</span></label>
+          <input type="range" id="enh-sharp" min="0" max="100" value="50" oninput="document.getElementById('enh-sharp-val').textContent=this.value+'%'">
+        </div>
+      </div>
+      <div class="card-2col mt16">
+        <div>
+          <div class="preview-wrap"><div class="preview-label">ORIGINAL</div><img id="enh-orig" src="" alt=""><div class="preview-info" id="enh-orig-info"></div></div>
+        </div>
+        <div>
+          <div class="preview-wrap"><div class="preview-label">ENHANCED</div><canvas id="enh-canvas"></canvas><div class="preview-info" id="enh-new-info"></div></div>
+        </div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-secondary btn-sm" onclick="applyEnhance()">✨ Apply Enhancement</button>
+        <button class="btn btn-primary" onclick="downloadEnhanced()">⬇️ Download Enhanced</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── MERGE PDF ─── -->
+  <div class="page" id="page-merge-pdf">
+    <div class="section-header">
+      <h2><span class="icon">🗂️</span> Merge PDFs</h2>
+      <div class="divider"></div>
+      <p>Upload multiple PDFs, drag to reorder, then merge into one file.</p>
+    </div>
+    <div class="card">
+      <div class="dropzone" id="mpdf-dz">
+        <input type="file" accept=".pdf" multiple id="mpdf-file" class="dz-input" onchange="handleMpdfUpload(event)">
+        <span class="dz-icon">🗂️</span>
+        <div class="dz-title">Merge PDFs</div>
+        <div class="dz-sub">Select multiple PDF files to merge</div>
+        <button class="dz-btn" onclick="document.getElementById('mpdf-file').click()">📁 Choose PDFs</button>
+      </div>
+      <div class="pdf-list" id="mpdf-list"></div>
+      <div class="btn-group" id="mpdf-btn-wrap" style="display:none">
+        <button class="btn btn-secondary btn-sm" onclick="clearMpdfList()">🗑️ Clear All</button>
+        <button class="btn btn-primary" onclick="mergePDFs()">🗂️ Merge &amp; Download</button>
+      </div>
+      <div id="mpdf-count" class="info-box mt12" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- ─── PDF TO IMG ─── -->
+  <div class="page" id="page-pdf-to-img">
+    <div class="section-header">
+      <h2><span class="icon">🖼️</span> PDF to Images</h2>
+      <div class="divider"></div>
+      <p>Convert each page of a PDF to an image. Download individually or as a ZIP.</p>
+    </div>
+    <div class="card">
+      <div class="dropzone" id="p2i-dz">
+        <input type="file" accept=".pdf" id="p2i-file" class="dz-input" onchange="handleP2iUpload(event)">
+        <span class="dz-icon">🖼️</span>
+        <div class="dz-title">PDF to Images</div>
+        <div class="dz-sub">Convert each page to JPG or PNG</div>
+        <button class="dz-btn" onclick="document.getElementById('p2i-file').click()">📁 Choose PDF</button>
+      </div>
+    </div>
+    <div class="card" id="p2i-controls" style="display:none">
+      <div class="row" style="max-width:350px">
+        <div>
+          <label class="lbl">Output Format</label>
+          <select id="p2i-format">
+            <option value="image/jpeg">JPG</option>
+            <option value="image/png">PNG</option>
+          </select>
+        </div>
+        <div>
+          <label class="lbl">Scale (Quality)</label>
+          <select id="p2i-scale">
+            <option value="1">1× (Fast)</option>
+            <option value="2" selected>2× (Good)</option>
+            <option value="3">3× (High)</option>
+          </select>
+        </div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="convertPdfToImages()">🖼️ Convert Pages</button>
+      </div>
+      <div class="img-grid" id="p2i-results"></div>
+      <div class="btn-group" id="p2i-dl-all" style="display:none">
+        <button class="btn btn-success" onclick="downloadAllPdfImages()">⬇️ Download All as ZIP</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── COMPRESS PDF ─── -->
+  <div class="page" id="page-compress-pdf">
+    <div class="section-header">
+      <h2><span class="icon">🗜️</span> Compress PDF</h2>
+      <div class="divider"></div>
+      <p>Reduce PDF file size by removing metadata and optimizing structure.</p>
+    </div>
+    <div class="card">
+      <div class="dropzone" id="cpdf-dz">
+        <input type="file" accept=".pdf" id="cpdf-file" class="dz-input" onchange="handleCpdfUpload(event)">
+        <span class="dz-icon">🗜️</span>
+        <div class="dz-title">Compress PDF</div>
+        <div class="dz-sub">Reduce PDF file size</div>
+        <button class="dz-btn" onclick="document.getElementById('cpdf-file').click()">📁 Choose PDF</button>
+      </div>
+    </div>
+    <div class="card" id="cpdf-controls" style="display:none">
+      <div class="size-compare">
+        <div class="size-row"><span>Original</span><span id="cpdf-orig-size" class="tag tag-kb">—</span></div>
+        <div class="size-bar"><div class="size-bar-fill" id="cpdf-orig-bar" style="width:100%"></div></div>
+        <div class="size-row"><span>Compressed</span><span id="cpdf-new-size" class="tag tag-kb">—</span></div>
+        <div class="size-bar"><div class="size-bar-fill target" id="cpdf-new-bar" style="width:0%"></div></div>
+        <div style="margin-top:8px;font-size:.8rem;color:var(--text-dim);font-family:var(--font-mono)" id="cpdf-savings"></div>
+      </div>
+      <div class="btn-group mt16">
+        <button class="btn btn-primary" onclick="compressPDF()">🗜️ Compress &amp; Download</button>
+      </div>
+      <div class="info-box mt12">
+        <strong>Note:</strong> PDF compression removes metadata and optimizes cross-reference tables. Results vary by PDF content. Image-heavy PDFs may not compress significantly via this method.
+      </div>
+    </div>
+  </div>
+
+</div><!-- end #main -->
+
+<!-- MOBILE NAV -->
+<div id="mobile-nav">
+  <div class="mob-nav-item active" onclick="goTo('home')"><span class="icon">🏠</span>Home</div>
+  <div class="mob-nav-item" onclick="goTo('resize')"><span class="icon">↔️</span>Resize</div>
+  <div class="mob-nav-item" onclick="goTo('crop')"><span class="icon">✂️</span>Crop</div>
+  <div class="mob-nav-item" onclick="goTo('compress-img')"><span class="icon">📦</span>Compress</div>
+  <div class="mob-nav-item" onclick="goTo('merge-pdf')"><span class="icon">🗂️</span>Merge</div>
+</div>
+
+<!-- TOAST -->
+<div id="toast-container"></div>
+
+<script>
+// ══════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════
+const pageMap = {
+  home:'Home', resize:'Resize Image', crop:'Crop Image',
+  'compress-img':'Compress Image', convert:'Convert Format',
+  passport:'Passport Photo', 'increase-kb':'Increase KB',
+  'remove-bg':'Remove Background', enhance:'Enhance Quality',
+  'merge-pdf':'Merge PDFs', 'pdf-to-img':'PDF to Images', 'compress-pdf':'Compress PDF'
+};
+
+function goTo(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.mob-nav-item').forEach(n => n.classList.remove('active'));
+  const page = document.getElementById('page-'+id);
+  if (page) page.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick') && n.getAttribute('onclick').includes("'"+id+"'")) n.classList.add('active');
+  });
+  document.getElementById('topbar-title').textContent = pageMap[id] || id;
+  closeSidebar();
+  window.scrollTo(0,0);
+}
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+}
+
+// ══════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════
+function toast(msg, type='info', dur=3500) {
+  const icons = {success:'✅', error:'❌', info:'ℹ️'};
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span class="toast-icon">${icons[type]||'ℹ️'}</span><span class="toast-msg">${msg}</span>`;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => { el.style.animation = 'slideOut .3s ease forwards'; setTimeout(() => el.remove(), 300); }, dur);
+}
+
+// ══════════════════════════════════════════════
+// SPINNER
+// ══════════════════════════════════════════════
+function showSpinner(msg='Processing...') {
+  const el = document.createElement('div');
+  el.className = 'spinner-overlay'; el.id = 'spinner';
+  el.innerHTML = `<div class="spinner"></div><div class="spinner-text">${msg}</div>`;
+  document.body.appendChild(el);
+}
+function hideSpinner() { const el = document.getElementById('spinner'); if(el) el.remove(); }
+
+// ══════════════════════════════════════════════
+// DRAG & DROP SETUP
+// ══════════════════════════════════════════════
+function setupDragDrop(dzId, fileInputId, handler) {
+  const dz = document.getElementById(dzId);
+  if (!dz) return;
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('drag-over');
+    const files = e.dataTransfer.files;
+    if (files.length) handler({target:{files}});
+  });
+  // Also wire the hidden input change (already done via onchange attr, but just in case)
+  const input = document.getElementById(fileInputId);
+  if (input) input.addEventListener('change', handler);
+}
+
+// ══════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════
+function formatBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1024*1024) return (b/1024).toFixed(1) + ' KB';
+  return (b/1024/1024).toFixed(2) + ' MB';
+}
+function loadImageFromFile(file) {
+  return new Promise((res, rej) => {
+    if (!file || !file.type.startsWith('image/')) { rej('Not an image'); return; }
+    if (file.size > 20*1024*1024) { toast('File >20MB, may be slow','info'); }
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => res(img);
+    img.onerror = rej;
+    img.src = url;
+  });
+}
+function canvasToBlob(canvas, type='image/jpeg', quality=0.92) {
+  return new Promise(res => canvas.toBlob(res, type, quality));
+}
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function drawImageToCanvas(canvas, img, w, h) {
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, 0, 0, w, h);
+  return ctx;
+}
+
+// ══════════════════════════════════════════════
+// 1. RESIZE
+// ══════════════════════════════════════════════
+let resizeImg = null, resizeOrigW = 0, resizeOrigH = 0, resizeOrigFile = null;
+
+setupDragDrop('resize-dz','resize-file', handleResizeUpload);
+
+async function handleResizeUpload(e) {
+  const file = e.target.files[0]; if (!file) return;
+  try {
+    resizeOrigFile = file;
+    resizeImg = await loadImageFromFile(file);
+    resizeOrigW = resizeImg.naturalWidth; resizeOrigH = resizeImg.naturalHeight;
+    document.getElementById('resize-w').value = resizeOrigW;
+    document.getElementById('resize-h').value = resizeOrigH;
+    document.getElementById('resize-orig').src = resizeImg.src;
+    document.getElementById('resize-orig-info').textContent = `${resizeOrigW}×${resizeOrigH}px`;
+    document.getElementById('resize-controls').style.display = 'block';
+    updateResizePreview();
+    toast('Image loaded', 'success');
+  } catch(err) { toast('Failed to load image','error'); }
+}
+
+function syncAspect(changed) {
+  if (!document.getElementById('aspect-lock').checked) return;
+  const ratio = resizeOrigW / resizeOrigH;
+  if (changed === 'w') {
+    const w = parseInt(document.getElementById('resize-w').value)||1;
+    document.getElementById('resize-h').value = Math.round(w / ratio);
+  } else {
+    const h = parseInt(document.getElementById('resize-h').value)||1;
+    document.getElementById('resize-w').value = Math.round(h * ratio);
+  }
+  updateResizePreview();
+}
+
+function onResizeFormatChange() {
+  const fmt = document.getElementById('resize-format').value;
+  // PNG doesn't use quality slider
+  document.getElementById('resize-quality-wrap').style.opacity = fmt === 'image/png' ? '0.4' : '1';
+  document.getElementById('resize-quality').disabled = fmt === 'image/png';
+  updateResizePreview();
+}
+
+function toggleTargetKb() {
+  const on = document.getElementById('resize-target-kb-toggle').checked;
+  document.getElementById('resize-target-kb-wrap').style.display = on ? 'block' : 'none';
+  if (!on) document.getElementById('resize-kb-hint').textContent = '';
+}
+
+async function applyTargetKb() {
+  if (!resizeImg) return;
+  const targetKb = parseInt(document.getElementById('resize-target-kb').value)||200;
+  const targetBytes = targetKb * 1024;
+  const fmt = document.getElementById('resize-format').value;
+  if (fmt === 'image/png') {
+    toast('PNG is lossless — quality slider not applicable','info');
+    return;
+  }
+  const w = parseInt(document.getElementById('resize-w').value)||1;
+  const h = parseInt(document.getElementById('resize-h').value)||1;
+  const c = document.createElement('canvas');
+  drawImageToCanvas(c, resizeImg, w, h);
+
+  // Binary search for quality
+  let lo = 1, hi = 100, bestQ = 92;
+  for (let i = 0; i < 10; i++) {
+    const mid = Math.round((lo + hi) / 2);
+    const blob = await canvasToBlob(c, fmt, mid / 100);
+    if (blob.size <= targetBytes) { bestQ = mid; lo = mid + 1; }
+    else { hi = mid - 1; }
+    if (lo > hi) break;
+  }
+  document.getElementById('resize-quality').value = bestQ;
+  document.getElementById('resize-q-val').textContent = bestQ + '%';
+  document.getElementById('resize-kb-hint').textContent = `✅ Auto-set quality to ${bestQ}% to hit ~${targetKb} KB`;
+  updateResizePreview();
+  toast(`Quality set to ${bestQ}% for ~${targetKb} KB output`, 'success');
+}
+
+async function updateResizePreview() {
+  if (!resizeImg) return;
+  const w = parseInt(document.getElementById('resize-w').value)||1;
+  const h = parseInt(document.getElementById('resize-h').value)||1;
+  const c = document.getElementById('resize-preview');
+  drawImageToCanvas(c, resizeImg, w, h);
+  document.getElementById('resize-preview-info').textContent = `${w}×${h}px`;
+
+  // Estimate output size
+  const fmt = document.getElementById('resize-format').value;
+  const q = parseInt(document.getElementById('resize-quality').value||92) / 100;
+  const tmp = document.createElement('canvas');
+  drawImageToCanvas(tmp, resizeImg, w, h);
+  const blob = await canvasToBlob(tmp, fmt, q);
+  const origKb = resizeOrigFile ? (resizeOrigFile.size / 1024).toFixed(1) : '?';
+  const outKb = (blob.size / 1024).toFixed(1);
+  document.getElementById('resize-size-compare').style.display = 'block';
+  document.getElementById('resize-orig-size-kb').textContent = origKb + ' KB';
+  document.getElementById('resize-out-size-kb').textContent = outKb + ' KB';
+  const ratio = resizeOrigFile ? Math.min(100, (blob.size / resizeOrigFile.size) * 100) : 50;
+  document.getElementById('resize-out-bar').style.width = ratio + '%';
+  const diff = resizeOrigFile ? resizeOrigFile.size - blob.size : 0;
+  const sign = diff >= 0 ? '↓ Saved' : '↑ Increased by';
+  document.getElementById('resize-savings-txt').textContent = resizeOrigFile
+    ? `${sign} ${formatBytes(Math.abs(diff))} (${Math.round(Math.abs(1 - blob.size/resizeOrigFile.size)*100)}%)`
+    : '';
+}
+
+async function downloadResized() {
+  if (!resizeImg) return;
+  const w = parseInt(document.getElementById('resize-w').value)||1;
+  const h = parseInt(document.getElementById('resize-h').value)||1;
+  const fmt = document.getElementById('resize-format').value;
+  const q = parseInt(document.getElementById('resize-quality').value||92) / 100;
+  const ext = fmt === 'image/png' ? 'png' : fmt === 'image/webp' ? 'webp' : 'jpg';
+  const c = document.createElement('canvas');
+  drawImageToCanvas(c, resizeImg, w, h);
+  const blob = await canvasToBlob(c, fmt, q);
+  downloadBlob(blob, `pixelcraft-resized-${w}x${h}.${ext}`);
+  toast(`Downloaded as ${ext.toUpperCase()} (${(blob.size/1024).toFixed(1)} KB)!`, 'success');
+}
+
+// ══════════════════════════════════════════════
+// 2. CROP (MOST IMPORTANT)
+// ══════════════════════════════════════════════
+let cropImg = null, cropRatio = 'free', padColor = '#ffffff', padMode = false;
+let cropBox = {x:0,y:0,w:0,h:0};
+let isDragging = false, dragStart = {x:0,y:0}, dragType = 'move';
+let cropCanvasScale = 1;
+
+setupDragDrop('crop-dz','crop-file', handleCropUpload);
+
+async function handleCropUpload(e) {
+  const file = e.target.files[0]; if(!file) return;
+  try {
+    cropImg = await loadImageFromFile(file);
+    document.getElementById('crop-controls').style.display = 'block';
+    initCropCanvas();
+    toast('Image loaded — drag to select crop area','info');
+  } catch(err) { toast('Failed to load image','error'); }
+}
+
+function initCropCanvas() {
+  const wrap = document.getElementById('crop-canvas-wrap');
+  const canvas = document.getElementById('crop-canvas');
+  const maxW = Math.min(wrap.parentElement.clientWidth - 48, 700);
+  cropCanvasScale = Math.min(1, maxW / cropImg.naturalWidth);
+  const dispW = Math.round(cropImg.naturalWidth * cropCanvasScale);
+  const dispH = Math.round(cropImg.naturalHeight * cropCanvasScale);
+  canvas.width = dispW; canvas.height = dispH;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(cropImg, 0, 0, dispW, dispH);
+  // Initial box = full image
+  cropBox = {x:0, y:0, w:dispW, h:dispH};
+  applyRatioConstraint();
+  drawCropOverlay();
+  setupCropDrag();
+  refreshCropPreview();
+}
+
+function drawCropOverlay() {
+  const ov = document.getElementById('crop-overlay');
+  ov.style.left = cropBox.x+'px'; ov.style.top = cropBox.y+'px';
+  ov.style.width = cropBox.w+'px'; ov.style.height = cropBox.h+'px';
+  const actualX = Math.round(cropBox.x / cropCanvasScale);
+  const actualY = Math.round(cropBox.y / cropCanvasScale);
+  const actualW = Math.round(cropBox.w / cropCanvasScale);
+  const actualH = Math.round(cropBox.h / cropCanvasScale);
+  document.getElementById('crop-coords').textContent = `Selection: ${actualX},${actualY} → ${actualW}×${actualH}px`;
+}
+
+function applyRatioConstraint() {
+  if (cropRatio === 'free' || cropRatio === 'custom') return;
+  const [rw, rh] = cropRatio.split(':').map(Number);
+  const r = rw/rh;
+  const canvas = document.getElementById('crop-canvas');
+  // Fit ratio inside canvas
+  let w = canvas.width, h = Math.round(w/r);
+  if (h > canvas.height) { h = canvas.height; w = Math.round(h*r); }
+  cropBox.w = w; cropBox.h = h;
+  cropBox.x = Math.round((canvas.width - w)/2);
+  cropBox.y = Math.round((canvas.height - h)/2);
+}
+
+function setupCropDrag() {
+  const wrap = document.getElementById('crop-canvas-wrap');
+  const ov = document.getElementById('crop-overlay');
+  ov.style.pointerEvents = 'auto';
+
+  let startBox = null;
+  function getPos(e, el) {
+    const rect = el.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return { x: clientX - rect.left, y: clientY - rect.top };
+  }
+
+  wrap.addEventListener('mousedown', startDrag);
+  wrap.addEventListener('touchstart', startDrag, {passive:false});
+  document.addEventListener('mousemove', onDrag);
+  document.addEventListener('touchmove', onDrag, {passive:false});
+  document.addEventListener('mouseup', endDrag);
+  document.addEventListener('touchend', endDrag);
+
+  function startDrag(e) {
+    const canvas = document.getElementById('crop-canvas');
+    const pos = getPos(e, canvas);
+    const b = cropBox;
+    // Check if on overlay (move) or outside (new selection)
+    if (pos.x >= b.x && pos.x <= b.x+b.w && pos.y >= b.y && pos.y <= b.y+b.h) {
+      dragType = 'move';
+    } else {
+      dragType = 'new';
+    }
+    isDragging = true;
+    dragStart = pos;
+    startBox = {...cropBox};
+    e.preventDefault();
+  }
+  function onDrag(e) {
+    if (!isDragging) return;
+    e.preventDefault();
+    const canvas = document.getElementById('crop-canvas');
+    const pos = getPos(e, canvas);
+    const dx = pos.x - dragStart.x, dy = pos.y - dragStart.y;
+    if (dragType === 'move') {
+      let nx = startBox.x + dx, ny = startBox.y + dy;
+      nx = Math.max(0, Math.min(canvas.width - cropBox.w, nx));
+      ny = Math.max(0, Math.min(canvas.height - cropBox.h, ny));
+      cropBox.x = nx; cropBox.y = ny;
+    } else {
+      // New selection
+      let x = Math.min(dragStart.x, pos.x);
+      let y = Math.min(dragStart.y, pos.y);
+      let w = Math.abs(dx); let h = Math.abs(dy);
+      if (cropRatio !== 'free') {
+        const [rw,rh] = (cropRatio === 'custom')
+          ? [parseInt(document.getElementById('custom-rw').value)||1, parseInt(document.getElementById('custom-rh').value)||1]
+          : cropRatio.split(':').map(Number);
+        const r = rw/rh;
+        h = w/r;
+      }
+      x = Math.max(0, Math.min(x, canvas.width - w));
+      y = Math.max(0, Math.min(y, canvas.height - h));
+      w = Math.min(w, canvas.width - x);
+      h = Math.min(h, canvas.height - y);
+      if (w > 5 && h > 5) { cropBox = {x,y,w,h}; }
+    }
+    drawCropOverlay();
+  }
+  function endDrag() { if (isDragging) { isDragging = false; refreshCropPreview(); } }
+}
+
+function setRatio(r, btn) {
+  cropRatio = r;
+  document.querySelectorAll('.ratio-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('custom-ratio-row').style.display = r==='custom'?'flex':'none';
+  if (cropImg) { applyRatioConstraint(); drawCropOverlay(); refreshCropPreview(); }
+}
+
+function applyCustomRatio() {
+  if (cropImg && cropRatio === 'custom') { applyRatioConstraint(); drawCropOverlay(); refreshCropPreview(); }
+}
+
+function togglePad() {
+  padMode = document.getElementById('pad-toggle').checked;
+  document.getElementById('pad-options').style.display = padMode ? 'block' : 'none';
+  refreshCropPreview();
+}
+
+function setPadColor(color, el) {
+  padColor = color;
+  document.querySelectorAll('.pad-swatch').forEach(s => s.classList.remove('active'));
+  if (el) el.classList.add('active');
+  refreshCropPreview();
+}
+function setPadColorCustom(color) { padColor = color; refreshCropPreview(); }
+
+function refreshCropPreview() {
+  if (!cropImg) return;
+  const result = document.getElementById('crop-result-canvas');
+  const scale = 1 / cropCanvasScale;
+  const srcX = Math.round(cropBox.x * scale);
+  const srcY = Math.round(cropBox.y * scale);
+  const srcW = Math.round(cropBox.w * scale);
+  const srcH = Math.round(cropBox.h * scale);
+
+  if (padMode && cropRatio !== 'free') {
+    const [rw, rh] = (cropRatio === 'custom')
+      ? [parseInt(document.getElementById('custom-rw').value)||1, parseInt(document.getElementById('custom-rh').value)||1]
+      : cropRatio.split(':').map(Number);
+    const targetRatio = rw/rh;
+    const imgW = cropImg.naturalWidth, imgH = cropImg.naturalHeight;
+    const imgRatio = imgW/imgH;
+    let canvW, canvH, drawX, drawY, drawW, drawH;
+    if (imgRatio > targetRatio) {
+      canvW = imgW; canvH = Math.round(imgW/targetRatio);
+      drawX = 0; drawY = Math.round((canvH - imgH)/2);
+      drawW = imgW; drawH = imgH;
+    } else {
+      canvH = imgH; canvW = Math.round(imgH*targetRatio);
+      drawY = 0; drawX = Math.round((canvW - imgW)/2);
+      drawW = imgW; drawH = imgH;
+    }
+    result.width = canvW; result.height = canvH;
+    const ctx = result.getContext('2d');
+    ctx.clearRect(0,0,canvW,canvH);
+    if (padColor === 'transparent') {
+      // leave transparent
+    } else {
+      ctx.fillStyle = padColor;
+      ctx.fillRect(0,0,canvW,canvH);
+    }
+    ctx.drawImage(cropImg, drawX, drawY, drawW, drawH);
+  } else {
+    if (srcW < 1 || srcH < 1) return;
+    result.width = srcW; result.height = srcH;
+    const ctx = result.getContext('2d');
+    ctx.drawImage(cropImg, srcX, srcY, srcW, srcH, 0, 0, srcW, srcH);
+  }
+}
+
+async function downloadCrop() {
+  if (!cropImg) return;
+  const result = document.getElementById('crop-result-canvas');
+  refreshCropPreview();
+  const type = padMode ? 'image/png' : 'image/jpeg';
+  const blob = await canvasToBlob(result, type, 0.95);
+  downloadBlob(blob, `pixelcraft-crop.${padMode?'png':'jpg'}`);
+  toast('Downloaded!','success');
+}
+
+// ══════════════════════════════════════════════
+// 3. COMPRESS IMAGE
+// ══════════════════════════════════════════════
+let cimgFile = null, cimgImg = null;
+setupDragDrop('cimg-dz','cimg-file', handleCimgUpload);
+
+async function handleCimgUpload(e) {
+  cimgFile = e.target.files[0]; if(!cimgFile) return;
+  try {
+    cimgImg = await loadImageFromFile(cimgFile);
+    document.getElementById('cimg-controls').style.display = 'block';
+    document.getElementById('cimg-orig-size').textContent = formatBytes(cimgFile.size);
+    updateCimgPreview();
+    toast('Image loaded','success');
+  } catch(err) { toast('Failed to load','error'); }
+}
+
+async function updateCimgPreview() {
+  if (!cimgImg) return;
+  const fmt = document.getElementById('cimg-format').value;
+  const q = parseInt(document.getElementById('cimg-quality').value)/100;
+  const c = document.createElement('canvas');
+  c.width = cimgImg.naturalWidth; c.height = cimgImg.naturalHeight;
+  c.getContext('2d').drawImage(cimgImg,0,0);
+  const blob = await canvasToBlob(c, fmt, q);
+  const origSize = cimgFile.size;
+  const newSize = blob.size;
+  const ratio = newSize/origSize;
+  document.getElementById('cimg-new-size').textContent = formatBytes(newSize);
+  document.getElementById('cimg-new-bar').style.width = Math.min(100, ratio*100)+'%';
+  const savings = origSize - newSize;
+  document.getElementById('cimg-savings').textContent = savings > 0
+    ? `Saved ${formatBytes(savings)} (${Math.round((1-ratio)*100)}% reduction)`
+    : `Size increased by ${formatBytes(-savings)}`;
+}
+
+async function downloadCimg() {
+  if (!cimgImg) return;
+  const fmt = document.getElementById('cimg-format').value;
+  const q = parseInt(document.getElementById('cimg-quality').value)/100;
+  const exts = {'image/jpeg':'jpg','image/png':'png','image/webp':'webp'};
+  const c = document.createElement('canvas');
+  c.width = cimgImg.naturalWidth; c.height = cimgImg.naturalHeight;
+  c.getContext('2d').drawImage(cimgImg,0,0);
+  const blob = await canvasToBlob(c, fmt, q);
+  downloadBlob(blob, `pixelcraft-compressed.${exts[fmt]||'jpg'}`);
+  toast('Downloaded!','success');
+}
+
+// ══════════════════════════════════════════════
+// 4. CONVERT FORMAT
+// ══════════════════════════════════════════════
+let convImg = null, convFmt = 'image/jpeg', convExt = 'jpg';
+setupDragDrop('conv-dz','conv-file', handleConvUpload);
+
+async function handleConvUpload(e) {
+  const file = e.target.files[0]; if(!file) return;
+  try {
+    convImg = await loadImageFromFile(file);
+    document.getElementById('conv-preview').src = convImg.src;
+    document.getElementById('conv-controls').style.display = 'block';
+    document.getElementById('conv-info').innerHTML = `<strong>Original:</strong> ${file.name} · ${formatBytes(file.size)} · ${convImg.naturalWidth}×${convImg.naturalHeight}px`;
+    toast('Image loaded','success');
+  } catch(err) { toast('Failed to load','error'); }
+}
+
+function setConvFmt(fmt, ext, btn) {
+  convFmt = fmt; convExt = ext;
+  document.querySelectorAll('#conv-fmt-btns .ratio-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('conv-ext-label').textContent = ext.toUpperCase();
+}
+
+async function downloadConvert() {
+  if (!convImg) return;
+  const c = document.createElement('canvas');
+  c.width = convImg.naturalWidth; c.height = convImg.naturalHeight;
+  c.getContext('2d').drawImage(convImg,0,0);
+  const blob = await canvasToBlob(c, convFmt, 0.95);
+  downloadBlob(blob, `pixelcraft-converted.${convExt}`);
+  toast('Converted & downloaded!','success');
+}
+
+// ══════════════════════════════════════════════
+// 5. PASSPORT PHOTO
+// ══════════════════════════════════════════════
+let passImg = null;
+const passPresets = {
+  '35x45':{w:35,h:45},
+  '50x50':{w:51,h:51},
+  '40x60':{w:33,h:48},
+  '45x35':{w:50,h:70},
+};
+setupDragDrop('pass-dz','pass-file', handlePassUpload);
+
+async function handlePassUpload(e) {
+  const file = e.target.files[0]; if(!file) return;
+  try {
+    passImg = await loadImageFromFile(file);
+    document.getElementById('pass-orig').src = passImg.src;
+    document.getElementById('pass-controls').style.display = 'block';
+    updatePassPreview();
+    toast('Photo loaded','success');
+  } catch(err) { toast('Failed to load','error'); }
+}
+
+document.getElementById('pass-country').addEventListener('change', function() {
+  document.getElementById('pass-custom-wrap').style.display = this.value==='custom' ? 'block' : 'none';
+  updatePassPreview();
+});
+
+function updatePassPreview() {
+  if (!passImg) return;
+  const sel = document.getElementById('pass-country').value;
+  const dpi = parseInt(document.getElementById('pass-dpi').value);
+  let wmm, hmm;
+  if (sel === 'custom') {
+    wmm = parseFloat(document.getElementById('pass-cw').value)||35;
+    hmm = parseFloat(document.getElementById('pass-ch').value)||45;
+  } else {
+    const preset = passPresets[sel] || {w:35,h:45};
+    wmm = preset.w; hmm = preset.h;
+  }
+  const wpx = Math.round(wmm/25.4*dpi);
+  const hpx = Math.round(hmm/25.4*dpi);
+  const c = document.getElementById('pass-canvas');
+  c.width = wpx; c.height = hpx;
+  const ctx = c.getContext('2d');
+  // Smart cover crop (center)
+  const imgRatio = passImg.naturalWidth/passImg.naturalHeight;
+  const targetRatio = wpx/hpx;
+  let sx,sy,sw,sh;
+  if (imgRatio > targetRatio) {
+    sh = passImg.naturalHeight; sw = Math.round(sh*targetRatio);
+    sy = 0; sx = Math.round((passImg.naturalWidth-sw)/2);
+  } else {
+    sw = passImg.naturalWidth; sh = Math.round(sw/targetRatio);
+    sx = 0; sy = Math.round((passImg.naturalHeight-sh)/2);
+  }
+  ctx.drawImage(passImg, sx,sy,sw,sh, 0,0,wpx,hpx);
+  document.getElementById('pass-info').innerHTML = `<strong>${wmm}×${hmm}mm</strong> at ${dpi} DPI = <strong>${wpx}×${hpx}px</strong>`;
+}
+
+async function downloadPassport() {
+  if (!passImg) return;
+  updatePassPreview();
+  const c = document.getElementById('pass-canvas');
+  const blob = await canvasToBlob(c, 'image/jpeg', 0.97);
+  downloadBlob(blob, 'pixelcraft-passport.jpg');
+  toast('Passport photo downloaded!','success');
+}
+
+// ══════════════════════════════════════════════
+// 6. INCREASE KB
+// ══════════════════════════════════════════════
+let ikbFile = null, ikbImg = null;
+setupDragDrop('ikb-dz','ikb-file', handleIkbUpload);
+
+async function handleIkbUpload(e) {
+  ikbFile = e.target.files[0]; if(!ikbFile) return;
+  try {
+    ikbImg = await loadImageFromFile(ikbFile);
+    document.getElementById('ikb-controls').style.display = 'block';
+    document.getElementById('ikb-cur').textContent = formatBytes(ikbFile.size);
+    const curKB = ikbFile.size/1024;
+    document.getElementById('ikb-target').value = Math.ceil(curKB * 2);
+    updateIkbDisplay();
+    toast('Image loaded','success');
+  } catch(err) { toast('Failed to load','error'); }
+}
+
+function updateIkbDisplay() {
+  const target = parseInt(document.getElementById('ikb-target').value)||200;
+  document.getElementById('ikb-tgt-lbl').textContent = target + ' KB';
+  const cur = ikbFile ? ikbFile.size/1024 : 0;
+  const max = Math.max(cur, target);
+  document.getElementById('ikb-cur-bar').style.width = Math.round(cur/max*100)+'%';
+  document.getElementById('ikb-tgt-bar').style.width = Math.round(target/max*100)+'%';
+}
+document.getElementById('ikb-target').addEventListener('input', updateIkbDisplay);
+
+async function processIncreaseKb() {
+  if (!ikbImg) return;
+  const targetKB = parseInt(document.getElementById('ikb-target').value)||200;
+  const targetBytes = targetKB * 1024;
+  showSpinner('Increasing size...');
+  try {
+    let scale = parseFloat(document.getElementById('ikb-scale').value)||1.5;
+    let w = Math.round(ikbImg.naturalWidth * scale);
+    let h = Math.round(ikbImg.naturalHeight * scale);
+    let blob, attempts = 0;
+    do {
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(ikbImg, 0, 0, w, h);
+      blob = await canvasToBlob(c, 'image/jpeg', 1.0);
+      if (blob.size < targetBytes) { w = Math.round(w*1.3); h = Math.round(h*1.3); }
+      attempts++;
+    } while (blob.size < targetBytes && attempts < 10 && w < 20000);
+    hideSpinner();
+    downloadBlob(blob, 'pixelcraft-increased.jpg');
+    toast(`Done! File: ${formatBytes(blob.size)}`,'success');
+  } catch(e) { hideSpinner(); toast('Error processing','error'); }
+}
+
+// ══════════════════════════════════════════════
+// 7. REMOVE BG
+// ══════════════════════════════════════════════
+let rbgImg = null, rbgSampledColor = null;
+setupDragDrop('rbg-dz','rbg-file', handleRbgUpload);
+
+async function handleRbgUpload(e) {
+  const file = e.target.files[0]; if(!file) return;
+  try {
+    rbgImg = await loadImageFromFile(file);
+    const ic = document.getElementById('rbg-input-canvas');
+    const maxW = Math.min(480, rbgImg.naturalWidth);
+    const scale = maxW/rbgImg.naturalWidth;
+    ic.width = Math.round(rbgImg.naturalWidth*scale);
+    ic.height = Math.round(rbgImg.naturalHeight*scale);
+    ic.getContext('2d').drawImage(rbgImg, 0,0,ic.width,ic.height);
+    document.getElementById('rbg-controls').style.display = 'block';
+    toast('Click on the background to sample its color','info');
+  } catch(err) { toast('Failed','error'); }
+}
+
+function sampleBgColor(e) {
+  const ic = document.getElementById('rbg-input-canvas');
+  const rect = ic.getBoundingClientRect();
+  const x = Math.round((e.clientX - rect.left) * ic.width / rect.width);
+  const y = Math.round((e.clientY - rect.top) * ic.height / rect.height);
+  const ctx = ic.getContext('2d');
+  const px = ctx.getImageData(x,y,1,1).data;
+  rbgSampledColor = {r:px[0],g:px[1],b:px[2]};
+  const hex = '#'+[px[0],px[1],px[2]].map(v=>v.toString(16).padStart(2,'0')).join('');
+  document.getElementById('rbg-color-preview').style.background = hex;
+  toast(`Sampled: rgb(${px[0]},${px[1]},${px[2]}) — Now click Apply Removal`,'info');
+  applyBgRemoval();
+}
+
+function applyBgRemoval() {
+  if (!rbgImg || !rbgSampledColor) { toast('Click on background color first','info'); return; }
+  const tol = parseInt(document.getElementById('rbg-tolerance').value);
+  const oc = document.getElementById('rbg-output-canvas');
+  oc.width = rbgImg.naturalWidth; oc.height = rbgImg.naturalHeight;
+  const ctx = oc.getContext('2d');
+  ctx.drawImage(rbgImg, 0,0);
+  const imgData = ctx.getImageData(0,0,oc.width,oc.height);
+  const d = imgData.data;
+  const {r:tr,g:tg,b:tb} = rbgSampledColor;
+  for (let i=0; i<d.length; i+=4) {
+    const diff = Math.sqrt((d[i]-tr)**2 + (d[i+1]-tg)**2 + (d[i+2]-tb)**2);
+    if (diff <= tol * 2.2) { d[i+3] = 0; }
+  }
+  ctx.putImageData(imgData,0,0);
+  toast('Background removed!','success');
+}
+
+async function downloadRbg() {
+  const oc = document.getElementById('rbg-output-canvas');
+  if (!oc.width) { toast('Apply removal first','info'); return; }
+  const blob = await canvasToBlob(oc,'image/png',1);
+  downloadBlob(blob,'pixelcraft-nobg.png');
+  toast('Downloaded!','success');
+}
+
+// ══════════════════════════════════════════════
+// 8. ENHANCE QUALITY
+// ══════════════════════════════════════════════
+let enhImg = null;
+setupDragDrop('enh-dz','enh-file', handleEnhUpload);
+
+async function handleEnhUpload(e) {
+  const file = e.target.files[0]; if(!file) return;
+  try {
+    enhImg = await loadImageFromFile(file);
+    document.getElementById('enh-orig').src = enhImg.src;
+    document.getElementById('enh-orig-info').textContent = `${enhImg.naturalWidth}×${enhImg.naturalHeight}`;
+    document.getElementById('enh-controls').style.display = 'block';
+    applyEnhance();
+    toast('Image loaded','success');
+  } catch(err) { toast('Failed','error'); }
+}
+
+function applyEnhance() {
+  if (!enhImg) return;
+  const level = parseInt(document.getElementById('enh-level').value);
+  const sharpness = parseInt(document.getElementById('enh-sharp').value)/100;
+  const c = document.getElementById('enh-canvas');
+  const nw = enhImg.naturalWidth * level;
+  const nh = enhImg.naturalHeight * level;
+  c.width = nw; c.height = nh;
+  const ctx = c.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(enhImg,0,0,nw,nh);
+  // Unsharp mask via convolution
+  if (sharpness > 0) {
+    const imgData = ctx.getImageData(0,0,nw,nh);
+    const result = applyUnsharpMask(imgData, sharpness);
+    ctx.putImageData(result,0,0);
+  }
+  document.getElementById('enh-new-info').textContent = `${nw}×${nh} (${level}×)`;
+}
+
+function applyUnsharpMask(imgData, strength) {
+  const d = imgData.data, w = imgData.width, h = imgData.height;
+  const out = new Uint8ClampedArray(d);
+  const kernel = [-1,-1,-1, -1,9,-1, -1,-1,-1]; // sharpen
+  const s = strength;
+  for (let y=1;y<h-1;y++) {
+    for (let x=1;x<w-1;x++) {
+      for (let c=0;c<3;c++) {
+        let sum = 0;
+        for (let ky=-1;ky<=1;ky++) {
+          for (let kx=-1;kx<=1;kx++) {
+            const idx = ((y+ky)*w+(x+kx))*4+c;
+            sum += d[idx] * kernel[(ky+1)*3+(kx+1)];
+          }
+        }
+        const idx = (y*w+x)*4+c;
+        out[idx] = Math.max(0,Math.min(255, d[idx]*(1-s) + sum*s));
+      }
+      out[(y*w+x)*4+3] = d[(y*w+x)*4+3];
+    }
+  }
+  return new ImageData(out, w, h);
+}
+
+async function downloadEnhanced() {
+  if (!enhImg) return;
+  applyEnhance();
+  const c = document.getElementById('enh-canvas');
+  const blob = await canvasToBlob(c,'image/jpeg',0.97);
+  downloadBlob(blob,'pixelcraft-enhanced.jpg');
+  toast('Downloaded!','success');
+}
+
+// ══════════════════════════════════════════════
+// 9. MERGE PDFs
+// ══════════════════════════════════════════════
+let mpdfFiles = [];
+setupDragDrop('mpdf-dz','mpdf-file', handleMpdfUpload);
+
+function handleMpdfUpload(e) {
+  const files = Array.from(e.target.files);
+  files.forEach(f => { if(f.type==='application/pdf') mpdfFiles.push(f); });
+  renderMpdfList();
+}
+
+function renderMpdfList() {
+  const list = document.getElementById('mpdf-list');
+  list.innerHTML = '';
+  mpdfFiles.forEach((f, i) => {
+    const el = document.createElement('div');
+    el.className = 'pdf-item'; el.draggable = true;
+    el.dataset.index = i;
+    el.innerHTML = `<span class="drag-icon">⠿</span><span class="file-name">📄 ${f.name}</span><span class="file-size">${formatBytes(f.size)}</span><button class="remove-btn" onclick="removeMpdf(${i})">✕</button>`;
+    setupPdfItemDrag(el);
+    list.appendChild(el);
+  });
+  const hasFiles = mpdfFiles.length > 0;
+  document.getElementById('mpdf-btn-wrap').style.display = hasFiles ? 'flex' : 'none';
+  document.getElementById('mpdf-count').style.display = hasFiles ? 'block' : 'none';
+  document.getElementById('mpdf-count').innerHTML = `<strong>${mpdfFiles.length} PDF(s)</strong> ready to merge. Drag items to reorder.`;
+}
+
+function removeMpdf(i) { mpdfFiles.splice(i,1); renderMpdfList(); }
+function clearMpdfList() { mpdfFiles = []; renderMpdfList(); }
+
+let dragSrcIdx = null;
+function setupPdfItemDrag(el) {
+  el.addEventListener('dragstart', () => { dragSrcIdx = parseInt(el.dataset.index); el.classList.add('dragging'); });
+  el.addEventListener('dragend', () => el.classList.remove('dragging'));
+  el.addEventListener('dragover', e => e.preventDefault());
+  el.addEventListener('drop', () => {
+    const targetIdx = parseInt(el.dataset.index);
+    if (dragSrcIdx !== null && dragSrcIdx !== targetIdx) {
+      const moved = mpdfFiles.splice(dragSrcIdx,1)[0];
+      mpdfFiles.splice(targetIdx,0,moved);
+      renderMpdfList();
+    }
+    dragSrcIdx = null;
+  });
+}
+
+async function mergePDFs() {
+  if (mpdfFiles.length < 2) { toast('Add at least 2 PDFs','info'); return; }
+  if (typeof PDFLib === 'undefined') { toast('pdf-lib not loaded. Check internet connection.','error'); return; }
+  showSpinner('Merging PDFs...');
+  try {
+    const merged = await PDFLib.PDFDocument.create();
+    for (const file of mpdfFiles) {
+      const buf = await file.arrayBuffer();
+      const doc = await PDFLib.PDFDocument.load(buf);
+      const pages = await merged.copyPages(doc, doc.getPageIndices());
+      pages.forEach(p => merged.addPage(p));
+    }
+    const bytes = await merged.save();
+    const blob = new Blob([bytes],{type:'application/pdf'});
+    downloadBlob(blob,'pixelcraft-merged.pdf');
+    hideSpinner();
+    toast(`Merged ${mpdfFiles.length} PDFs!`,'success');
+  } catch(e) { hideSpinner(); toast('Merge failed: '+e.message,'error'); }
+}
+
+// ══════════════════════════════════════════════
+// 10. PDF TO IMAGES
+// ══════════════════════════════════════════════
+let p2iPdfFile = null, p2iImages = [];
+setupDragDrop('p2i-dz','p2i-file', handleP2iUpload);
+
+function handleP2iUpload(e) {
+  p2iPdfFile = e.target.files[0];
+  if (!p2iPdfFile) return;
+  document.getElementById('p2i-controls').style.display = 'block';
+  document.getElementById('p2i-results').innerHTML = '';
+  document.getElementById('p2i-dl-all').style.display = 'none';
+  p2iImages = [];
+  toast(`PDF loaded: ${p2iPdfFile.name}`,'success');
+}
+
+async function convertPdfToImages() {
+  if (!p2iPdfFile) return;
+  if (typeof pdfjsLib === 'undefined') { toast('pdf.js not loaded','error'); return; }
+  showSpinner('Converting pages...');
+  try {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+    const buf = await p2iPdfFile.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({data:buf}).promise;
+    const fmt = document.getElementById('p2i-format').value;
+    const scale = parseFloat(document.getElementById('p2i-scale').value);
+    p2iImages = [];
+    const results = document.getElementById('p2i-results');
+    results.innerHTML = '';
+
+    for (let i=1; i<=pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const vp = page.getViewport({scale});
+      const c = document.createElement('canvas');
+      c.width = vp.width; c.height = vp.height;
+      await page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+      const blob = await canvasToBlob(c, fmt, 0.92);
+      const url = URL.createObjectURL(blob);
+      p2iImages.push({blob, url, page:i, fmt});
+
+      const div = document.createElement('div');
+      div.className = 'img-thumb';
+      div.innerHTML = `<img src="${url}" alt="Page ${i}"><div class="dl-btn" onclick="downloadP2iSingle(${i-1})">⬇️ Page ${i}</div>`;
+      results.appendChild(div);
+    }
+    document.getElementById('p2i-dl-all').style.display = 'flex';
+    hideSpinner();
+    toast(`Converted ${pdf.numPages} pages!`,'success');
+  } catch(e) { hideSpinner(); toast('Conversion failed: '+e.message,'error'); }
+}
+
+function downloadP2iSingle(idx) {
+  const item = p2iImages[idx];
+  const ext = item.fmt.includes('png') ? 'png' : 'jpg';
+  downloadBlob(item.blob, `pixelcraft-page-${item.page}.${ext}`);
+}
+
+async function downloadAllPdfImages() {
+  if (!p2iImages.length) return;
+  if (typeof JSZip === 'undefined') { toast('JSZip not loaded','error'); return; }
+  showSpinner('Creating ZIP...');
+  const zip = new JSZip();
+  for (const item of p2iImages) {
+    const ext = item.fmt.includes('png')?'png':'jpg';
+    zip.file(`page-${String(item.page).padStart(3,'0')}.${ext}`, item.blob);
+  }
+  const blob = await zip.generateAsync({type:'blob'});
+  hideSpinner();
+  downloadBlob(blob,'pixelcraft-pdf-pages.zip');
+  toast('ZIP downloaded!','success');
+}
+
+// ══════════════════════════════════════════════
+// 11. COMPRESS PDF
+// ══════════════════════════════════════════════
+let cpdfFile = null;
+setupDragDrop('cpdf-dz','cpdf-file', handleCpdfUpload);
+
+function handleCpdfUpload(e) {
+  cpdfFile = e.target.files[0]; if(!cpdfFile) return;
+  document.getElementById('cpdf-controls').style.display = 'block';
+  document.getElementById('cpdf-orig-size').textContent = formatBytes(cpdfFile.size);
+  document.getElementById('cpdf-new-size').textContent = 'Processing...';
+  toast('PDF loaded','success');
+}
+
+async function compressPDF() {
+  if (!cpdfFile) return;
+  if (typeof PDFLib === 'undefined') { toast('pdf-lib not loaded','error'); return; }
+  showSpinner('Compressing PDF...');
+  try {
+    const buf = await cpdfFile.arrayBuffer();
+    const doc = await PDFLib.PDFDocument.load(buf, {updateMetadata:false});
+    // Remove metadata to reduce size
+    doc.setTitle(''); doc.setAuthor(''); doc.setSubject('');
+    doc.setKeywords([]); doc.setProducer('PixelCraft'); doc.setCreator('PixelCraft');
+    const bytes = await doc.save({useObjectStreams:true});
+    const blob = new Blob([bytes],{type:'application/pdf'});
+    const orig = cpdfFile.size, newSize = blob.size;
+    document.getElementById('cpdf-new-size').textContent = formatBytes(newSize);
+    const ratio = newSize/orig;
+    document.getElementById('cpdf-new-bar').style.width = Math.min(100,ratio*100)+'%';
+    const savings = orig - newSize;
+    document.getElementById('cpdf-savings').textContent = savings > 0
+      ? `Saved ${formatBytes(savings)} (${Math.round((1-ratio)*100)}% smaller)`
+      : `Result: ${formatBytes(newSize)} (minimal compression possible)`;
+    hideSpinner();
+    downloadBlob(blob,'pixelcraft-compressed.pdf');
+    toast('Compressed & downloaded!','success');
+  } catch(e) { hideSpinner(); toast('Failed: '+e.message,'error'); }
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  // Check PDF.js loaded
+  if (typeof pdfjsLib !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+  }
+});
+</script>
+</body>
+</html>
