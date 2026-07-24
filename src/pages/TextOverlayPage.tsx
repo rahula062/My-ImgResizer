@@ -4,7 +4,7 @@ import { loadImageFromFile, canvasToBlob, downloadBlob } from '../utils/image'
 
 export default function TextOverlayPage() {
   const [image, setImage] = useState<HTMLImageElement | null>(null)
-  const [text, setText] = useState('PixelCraft Text Overlay')
+  const [text, setText] = useState('MediaHub Text Overlay')
   const [fontFamily, setFontFamily] = useState('sans-serif')
   const [fontSize, setFontSize] = useState(42)
   const [textColor, setTextColor] = useState('#00f5d4')
@@ -65,7 +65,7 @@ export default function TextOverlayPage() {
   const handleDownload = async () => {
     if (!canvasRef.current) return
     const blob = await canvasToBlob(canvasRef.current, 'image/png', 0.95)
-    downloadBlob(blob, 'pixelcraft-text-overlay.png')
+    downloadBlob(blob, 'mediahub-text-overlay.png')
   }
 
   return (

@@ -40,9 +40,9 @@ export default function HomePage({ onNavigate }: HomePageProps) {
       <div className="hero">
         <div className="hero-grid-bg" />
         <h1>
-          PIXEL
+          MEDIA
           <br />
-          CRAFT
+          HUB
         </h1>
         <p className="hero-sub">
           Professional image & PDF tools — all in your browser. No uploads, no servers, no limits.

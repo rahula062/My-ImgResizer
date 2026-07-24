@@ -54,7 +54,7 @@ export default function EnhancePage() {
     if (!canvasRef.current || !file) return
     const blob = await canvasToBlob(canvasRef.current, format, 0.92)
     const ext = format.split('/')[1] || 'png'
-    downloadBlob(blob, `pixelcraft-enhanced-${upscale}x-${file.name.split('.')[0]}.${ext}`)
+    downloadBlob(blob, `mediahub-enhanced-${upscale}x-${file.name.split('.')[0]}.${ext}`)
   }
 
   return (

@@ -30,7 +30,7 @@ export default function IncreaseKbPage() {
 
   const handleDownload = () => {
     if (!resultBlob || !file) return
-    downloadBlob(resultBlob, `pixelcraft-${targetKb}kb-${file.name}`)
+    downloadBlob(resultBlob, `mediahub-${targetKb}kb-${file.name}`)
   }
 
   return (

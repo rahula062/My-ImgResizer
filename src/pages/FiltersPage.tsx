@@ -55,7 +55,7 @@ export default function FiltersPage() {
   const handleDownload = async () => {
     if (!canvasRef.current) return
     const blob = await canvasToBlob(canvasRef.current, 'image/png', 0.95)
-    downloadBlob(blob, 'pixelcraft-filtered.png')
+    downloadBlob(blob, 'mediahub-filtered.png')
   }
 
   return (

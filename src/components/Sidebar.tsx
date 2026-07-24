@@ -80,7 +80,7 @@ export default function Sidebar({ currentPage, onNavigate, isOpen: propIsOpen, o
         {/* Logo */}
         <div className="sidebar-logo">
           <div className="logo-text">
-            PIXEL<span className="text-cyan">CRAFT</span>
+            MEDIA<span className="text-cyan">HUB</span>
           </div>
           <div className="logo-sub">Image & PDF Studio</div>
         </div>

@@ -25,7 +25,7 @@ export default function ExifViewerPage() {
     setIsProcessing(true)
     try {
       const cleanBlob = await stripExif(file)
-      downloadBlob(cleanBlob, `pixelcraft-clean-${file.name}`)
+      downloadBlob(cleanBlob, `mediahub-clean-${file.name}`)
     } catch (e) {
       alert('Failed to strip EXIF data')
     }

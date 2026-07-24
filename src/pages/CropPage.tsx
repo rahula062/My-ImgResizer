@@ -116,7 +116,7 @@ export default function CropPage() {
     if (!canvasRef.current || !file) return
     const blob = await canvasToBlob(canvasRef.current, format, 0.92)
     const ext = format === 'image/png' ? 'png' : format === 'image/webp' ? 'webp' : 'jpg'
-    downloadBlob(blob, `pixelcraft-cropped.${ext}`)
+    downloadBlob(blob, `mediahub-cropped.${ext}`)
   }
 
   return (

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PixelCraft — Image & PDF Studio</title>
+<title>MediaHub — Image & PDF Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
@@ -556,7 +556,7 @@ input[type=color] {
 <!-- SIDEBAR -->
 <nav id="sidebar">
   <div class="sidebar-logo">
-    <div class="logo-text">PIXEL<span style="color:var(--cyan)">CRAFT</span></div>
+    <div class="logo-text">MEDIA<span style="color:var(--cyan)">HUB</span></div>
     <div class="logo-sub">Image &amp; PDF Studio</div>
   </div>
   <div class="sidebar-nav">
@@ -593,7 +593,7 @@ input[type=color] {
   <div class="page active" id="page-home">
     <div class="hero">
       <div class="hero-grid-bg"></div>
-      <h1>PIXEL<br>CRAFT</h1>
+      <h1>MEDIA<br>HUB</h1>
       <p class="hero-sub">Professional image &amp; PDF tools — all in your browser. No uploads, no servers, no limits.</p>
       <div class="hero-stats">
         <div class="stat"><div class="stat-num">11</div><div class="stat-lbl">Tools</div></div>
@@ -1486,7 +1486,7 @@ async function downloadResized() {
   const c = document.createElement('canvas');
   drawImageToCanvas(c, resizeImg, w, h);
   const blob = await canvasToBlob(c, fmt, q);
-  downloadBlob(blob, `pixelcraft-resized-${w}x${h}.${ext}`);
+  downloadBlob(blob, `mediahub-resized-${w}x${h}.${ext}`);
   toast(`Downloaded as ${ext.toUpperCase()} (${(blob.size/1024).toFixed(1)} KB)!`, 'success');
 }
 
@@ -1697,7 +1697,7 @@ async function downloadCrop() {
   refreshCropPreview();
   const type = padMode ? 'image/png' : 'image/jpeg';
   const blob = await canvasToBlob(result, type, 0.95);
-  downloadBlob(blob, `pixelcraft-crop.${padMode?'png':'jpg'}`);
+  downloadBlob(blob, `mediahub-crop.${padMode?'png':'jpg'}`);
   toast('Downloaded!','success');
 }
 
@@ -1746,7 +1746,7 @@ async function downloadCimg() {
   c.width = cimgImg.naturalWidth; c.height = cimgImg.naturalHeight;
   c.getContext('2d').drawImage(cimgImg,0,0);
   const blob = await canvasToBlob(c, fmt, q);
-  downloadBlob(blob, `pixelcraft-compressed.${exts[fmt]||'jpg'}`);
+  downloadBlob(blob, `mediahub-compressed.${exts[fmt]||'jpg'}`);
   toast('Downloaded!','success');
 }
 
@@ -1780,7 +1780,7 @@ async function downloadConvert() {
   c.width = convImg.naturalWidth; c.height = convImg.naturalHeight;
   c.getContext('2d').drawImage(convImg,0,0);
   const blob = await canvasToBlob(c, convFmt, 0.95);
-  downloadBlob(blob, `pixelcraft-converted.${convExt}`);
+  downloadBlob(blob, `mediahub-converted.${convExt}`);
   toast('Converted & downloaded!','success');
 }
 
@@ -1849,7 +1849,7 @@ async function downloadPassport() {
   updatePassPreview();
   const c = document.getElementById('pass-canvas');
   const blob = await canvasToBlob(c, 'image/jpeg', 0.97);
-  downloadBlob(blob, 'pixelcraft-passport.jpg');
+  downloadBlob(blob, 'mediahub-passport.jpg');
   toast('Passport photo downloaded!','success');
 }
 
@@ -1901,7 +1901,7 @@ async function processIncreaseKb() {
       attempts++;
     } while (blob.size < targetBytes && attempts < 10 && w < 20000);
     hideSpinner();
-    downloadBlob(blob, 'pixelcraft-increased.jpg');
+    downloadBlob(blob, 'mediahub-increased.jpg');
     toast(`Done! File: ${formatBytes(blob.size)}`,'success');
   } catch(e) { hideSpinner(); toast('Error processing','error'); }
 }
@@ -1963,7 +1963,7 @@ async function downloadRbg() {
   const oc = document.getElementById('rbg-output-canvas');
   if (!oc.width) { toast('Apply removal first','info'); return; }
   const blob = await canvasToBlob(oc,'image/png',1);
-  downloadBlob(blob,'pixelcraft-nobg.png');
+  downloadBlob(blob,'mediahub-nobg.png');
   toast('Downloaded!','success');
 }
 
@@ -2035,7 +2035,7 @@ async function downloadEnhanced() {
   applyEnhance();
   const c = document.getElementById('enh-canvas');
   const blob = await canvasToBlob(c,'image/jpeg',0.97);
-  downloadBlob(blob,'pixelcraft-enhanced.jpg');
+  downloadBlob(blob,'mediahub-enhanced.jpg');
   toast('Downloaded!','success');
 }
 
@@ -2101,7 +2101,7 @@ async function mergePDFs() {
     }
     const bytes = await merged.save();
     const blob = new Blob([bytes],{type:'application/pdf'});
-    downloadBlob(blob,'pixelcraft-merged.pdf');
+    downloadBlob(blob,'mediahub-merged.pdf');
     hideSpinner();
     toast(`Merged ${mpdfFiles.length} PDFs!`,'success');
   } catch(e) { hideSpinner(); toast('Merge failed: '+e.message,'error'); }
@@ -2161,7 +2161,7 @@ async function convertPdfToImages() {
 function downloadP2iSingle(idx) {
   const item = p2iImages[idx];
   const ext = item.fmt.includes('png') ? 'png' : 'jpg';
-  downloadBlob(item.blob, `pixelcraft-page-${item.page}.${ext}`);
+  downloadBlob(item.blob, `mediahub-page-${item.page}.${ext}`);
 }
 
 async function downloadAllPdfImages() {
@@ -2175,7 +2175,7 @@ async function downloadAllPdfImages() {
   }
   const blob = await zip.generateAsync({type:'blob'});
   hideSpinner();
-  downloadBlob(blob,'pixelcraft-pdf-pages.zip');
+  downloadBlob(blob,'mediahub-pdf-pages.zip');
   toast('ZIP downloaded!','success');
 }
 
@@ -2202,7 +2202,7 @@ async function compressPDF() {
     const doc = await PDFLib.PDFDocument.load(buf, {updateMetadata:false});
     // Remove metadata to reduce size
     doc.setTitle(''); doc.setAuthor(''); doc.setSubject('');
-    doc.setKeywords([]); doc.setProducer('PixelCraft'); doc.setCreator('PixelCraft');
+    doc.setKeywords([]); doc.setProducer('MediaHub'); doc.setCreator('MediaHub');
     const bytes = await doc.save({useObjectStreams:true});
     const blob = new Blob([bytes],{type:'application/pdf'});
     const orig = cpdfFile.size, newSize = blob.size;
@@ -2214,7 +2214,7 @@ async function compressPDF() {
       ? `Saved ${formatBytes(savings)} (${Math.round((1-ratio)*100)}% smaller)`
       : `Result: ${formatBytes(newSize)} (minimal compression possible)`;
     hideSpinner();
-    downloadBlob(blob,'pixelcraft-compressed.pdf');
+    downloadBlob(blob,'mediahub-compressed.pdf');
     toast('Compressed & downloaded!','success');
   } catch(e) { hideSpinner(); toast('Failed: '+e.message,'error'); }
 }

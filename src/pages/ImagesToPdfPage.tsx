@@ -51,7 +51,7 @@ export default function ImagesToPdfPage() {
     try {
       const files = items.map((i) => i.file)
       const pdfBlob = await imagesToPdf(files, pageSize, orientation, margin)
-      downloadBlob(pdfBlob, 'pixelcraft-converted-images.pdf')
+      downloadBlob(pdfBlob, 'mediahub-converted-images.pdf')
     } catch (e) {
       alert('Failed to generate PDF')
       console.error(e)

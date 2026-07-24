@@ -102,7 +102,7 @@ export default function CompressPage() {
     })
 
     const content = await zip.generateAsync({ type: 'blob' })
-    downloadBlob(content, 'pixelcraft-compressed-images.zip')
+    downloadBlob(content, 'mediahub-compressed-images.zip')
   }
 
   return (

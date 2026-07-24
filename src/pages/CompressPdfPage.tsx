@@ -32,7 +32,7 @@ export default function CompressPdfPage() {
 
   const handleDownload = () => {
     if (!compressedBlob || !file) return
-    downloadBlob(compressedBlob, `pixelcraft-compressed-${file.name}`)
+    downloadBlob(compressedBlob, `mediahub-compressed-${file.name}`)
   }
 
   return (

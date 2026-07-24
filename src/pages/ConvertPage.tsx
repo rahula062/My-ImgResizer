@@ -86,7 +86,7 @@ export default function ConvertPage() {
     })
 
     const content = await zip.generateAsync({ type: 'blob' })
-    downloadBlob(content, `pixelcraft-converted-${ext}.zip`)
+    downloadBlob(content, `mediahub-converted-${ext}.zip`)
   }
 
   return (

@@ -36,7 +36,7 @@ export default function RoundCornersPage() {
     if (!canvasRef.current) return
     const blob = await canvasToBlob(canvasRef.current, format, 0.95)
     const ext = format.split('/')[1] || 'png'
-    downloadBlob(blob, `pixelcraft-rounded.${ext}`)
+    downloadBlob(blob, `mediahub-rounded.${ext}`)
   }
 
   return (

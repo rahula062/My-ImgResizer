@@ -50,7 +50,7 @@ export default function MergePdfPage() {
     try {
       const pdfFiles = items.map((i) => i.file)
       const mergedBlob = await mergePdfs(pdfFiles)
-      downloadBlob(mergedBlob, 'pixelcraft-merged-documents.pdf')
+      downloadBlob(mergedBlob, 'mediahub-merged-documents.pdf')
     } catch (e) {
       alert('Failed to merge PDFs')
       console.error(e)

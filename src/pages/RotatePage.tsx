@@ -39,7 +39,7 @@ export default function RotatePage() {
     if (!canvasRef.current) return
     const blob = await canvasToBlob(canvasRef.current, format, 0.95)
     const ext = format.split('/')[1] || 'png'
-    downloadBlob(blob, `pixelcraft-rotated-${angle}deg.${ext}`)
+    downloadBlob(blob, `mediahub-rotated-${angle}deg.${ext}`)
   }
 
   return (

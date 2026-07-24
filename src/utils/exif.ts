@@ -59,7 +59,7 @@ export async function parseExif(file: File): Promise<ExifInfo> {
 
           if (exifHeader === 'Exif') {
             info.make = 'EXIF Data Present'
-            info.software = 'PixelCraft EXIF Engine'
+            info.software = 'MediaHub EXIF Engine'
             info.dateTime = new Date(file.lastModified).toLocaleString()
           }
           break

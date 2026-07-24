@@ -135,7 +135,7 @@ export default function BatchProcessPage() {
     })
 
     const content = await zip.generateAsync({ type: 'blob' })
-    downloadBlob(content, 'pixelcraft-batch-processed.zip')
+    downloadBlob(content, 'mediahub-batch-processed.zip')
   }
 
   return (

@@ -6,7 +6,7 @@ type Position = 'top-left' | 'top-center' | 'top-right' | 'center' | 'bottom-lef
 
 export default function WatermarkPage() {
   const [image, setImage] = useState<HTMLImageElement | null>(null)
-  const [wmText, setWmText] = useState('© PixelCraft Watermark')
+  const [wmText, setWmText] = useState('© MediaHub Watermark')
   const [position, setPosition] = useState<Position>('bottom-right')
   const [opacity, setOpacity] = useState(60)
   const [fontSize, setFontSize] = useState(48)
@@ -83,7 +83,7 @@ export default function WatermarkPage() {
   const handleDownload = async () => {
     if (!canvasRef.current) return
     const blob = await canvasToBlob(canvasRef.current, 'image/png', 0.95)
-    downloadBlob(blob, 'pixelcraft-watermarked.png')
+    downloadBlob(blob, 'mediahub-watermarked.png')
   }
 
   return (

@@ -56,7 +56,7 @@ export default function RemoveBgPage() {
   const handleDownload = async () => {
     if (!canvasRef.current || !file) return
     const blob = await canvasToBlob(canvasRef.current, 'image/png', 1)
-    downloadBlob(blob, `pixelcraft-bg-removed-${file.name.split('.')[0]}.png`)
+    downloadBlob(blob, `mediahub-bg-removed-${file.name.split('.')[0]}.png`)
   }
 
   return (

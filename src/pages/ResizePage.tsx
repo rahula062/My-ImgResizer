@@ -73,7 +73,7 @@ export default function ResizePage() {
     drawImageToCanvas(canvas, image, w, h)
     const blob = await canvasToBlob(canvas, format, quality / 100)
     const ext = format === 'image/png' ? 'png' : format === 'image/webp' ? 'webp' : 'jpg'
-    downloadBlob(blob, `pixelcraft-resized-${w}x${h}.${ext}`)
+    downloadBlob(blob, `mediahub-resized-${w}x${h}.${ext}`)
   }
 
   return (
