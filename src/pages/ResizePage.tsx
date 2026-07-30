@@ -1,6 +1,7 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import Dropzone from '../components/ui/Dropzone'
 import { loadImageFromFile, drawImageToCanvas, canvasToBlob, downloadBlob, formatBytes } from '../utils/image'
+import { toast } from '../utils/toast'
 
 export default function ResizePage() {
   const [image, setImage] = useState<HTMLImageElement | null>(null)
@@ -25,9 +26,18 @@ export default function ResizePage() {
       setOrigSize(f.size)
       setPreviewUrl(img.src)
     } catch (e) {
-      alert('Failed to load image')
+      toast('Failed to load image. Please try another file.', 'error')
     }
   }, [])
+
+  // Cleanup preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl)
+      }
+    }
+  }, [previewUrl])
 
   const updatePreview = useCallback(async () => {
     if (!image) return
@@ -108,7 +118,6 @@ export default function ResizePage() {
                   min="1"
                   max="10000"
                   onChange={handleWidthChange}
-                  onInput={updatePreview}
                 />
               </div>
               <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: '2px', flex: 0 }}>
@@ -134,7 +143,6 @@ export default function ResizePage() {
                   min="1"
                   max="10000"
                   onChange={handleHeightChange}
-                  onInput={updatePreview}
                 />
               </div>
             </div>
@@ -158,7 +166,6 @@ export default function ResizePage() {
                   max="100"
                   value={quality}
                   onChange={(e) => setQuality(parseInt(e.target.value))}
-                  onInput={updatePreview}
                 />
               </div>
             </div>
@@ -214,7 +221,6 @@ export default function ResizePage() {
         </>
       )}
 
-      <canvas ref={canvasRef} style={{ display: 'none' }} />
     </div>
   )
 }

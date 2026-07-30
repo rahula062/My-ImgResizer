@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import Dropzone from '../components/ui/Dropzone'
 import { mergePdfs } from '../utils/pdf'
 import { downloadBlob, formatBytes } from '../utils/image'
+import { toast } from '../utils/toast'
 
 interface PdfItem {
   id: string
@@ -15,7 +16,7 @@ export default function MergePdfPage() {
   const handleFiles = useCallback((files: File[]) => {
     const pdfs = files.filter((f) => f.type === 'application/pdf' || f.name.endsWith('.pdf'))
     if (pdfs.length === 0) {
-      alert('Please upload PDF documents')
+      toast('Please upload PDF documents', 'error')
       return
     }
     const newItems: PdfItem[] = pdfs.map((f) => ({
@@ -43,7 +44,7 @@ export default function MergePdfPage() {
 
   const handleMerge = async () => {
     if (items.length < 2) {
-      alert('Please add at least 2 PDF files to merge')
+      toast('Please add at least 2 PDF files to merge', 'error')
       return
     }
     setIsProcessing(true)
@@ -52,7 +53,7 @@ export default function MergePdfPage() {
       const mergedBlob = await mergePdfs(pdfFiles)
       downloadBlob(mergedBlob, 'mediahub-merged-documents.pdf')
     } catch (e) {
-      alert('Failed to merge PDFs')
+      toast('Failed to merge PDFs. Please try again.', 'error')
       console.error(e)
     }
     setIsProcessing(false)

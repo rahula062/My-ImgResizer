@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import Dropzone from '../components/ui/Dropzone'
 import { loadImageFromFile, canvasToBlob, downloadBlob, applyFiltersToCanvas, FilterSettings } from '../utils/image'
+import { toast } from '../utils/toast'
 
 const defaultFilters: FilterSettings = {
   brightness: 100,
@@ -37,7 +38,7 @@ export default function FiltersPage() {
       setImage(img)
       setFilters(defaultFilters)
     } catch (e) {
-      alert('Failed to load image')
+      toast('Failed to load image. Please try another file.', 'error')
     }
   }, [])
 
@@ -47,6 +48,15 @@ export default function FiltersPage() {
     applyFiltersToCanvas(canvas, image, filters)
     setPreviewUrl(canvas.toDataURL('image/png', 0.95))
   }, [image, filters])
+
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl)
+      }
+    }
+  }, [previewUrl])
 
   useEffect(() => {
     processFilters()

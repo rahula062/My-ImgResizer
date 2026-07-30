@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import Dropzone from '../components/ui/Dropzone'
 import { compressPdf } from '../utils/pdf'
 import { downloadBlob, formatBytes } from '../utils/image'
+import { toast } from '../utils/toast'
 
 export default function CompressPdfPage() {
   const [file, setFile] = useState<File | null>(null)
@@ -10,7 +11,7 @@ export default function CompressPdfPage() {
 
   const handleFile = useCallback(async (f: File) => {
     if (f.type !== 'application/pdf' && !f.name.endsWith('.pdf')) {
-      alert('Please upload a PDF document')
+      toast('Please upload a PDF document', 'error')
       return
     }
     setFile(f)
@@ -24,7 +25,7 @@ export default function CompressPdfPage() {
       const result = await compressPdf(file)
       setCompressedBlob(result)
     } catch (e) {
-      alert('Failed to compress PDF')
+      toast('Failed to compress PDF. Please try again.', 'error')
       console.error(e)
     }
     setIsProcessing(false)

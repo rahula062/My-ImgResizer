@@ -3,6 +3,7 @@ import JSZip from 'jszip'
 import Dropzone from '../components/ui/Dropzone'
 import { pdfToImages } from '../utils/pdf'
 import { downloadBlob, formatBytes } from '../utils/image'
+import { toast } from '../utils/toast'
 
 interface PageResult {
   pageIndex: number
@@ -19,7 +20,7 @@ export default function PdfToImgPage() {
 
   const handleFile = useCallback(async (f: File) => {
     if (f.type !== 'application/pdf' && !f.name.endsWith('.pdf')) {
-      alert('Please select a PDF document')
+      toast('Please select a PDF document', 'error')
       return
     }
     setFile(f)
@@ -45,7 +46,7 @@ export default function PdfToImgPage() {
 
       setPages(pageResults)
     } catch (e) {
-      alert('Failed to render PDF pages')
+      toast('Failed to render PDF pages. Please try again.', 'error')
       console.error(e)
     }
     setIsProcessing(false)

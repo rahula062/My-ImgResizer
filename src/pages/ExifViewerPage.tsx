@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import Dropzone from '../components/ui/Dropzone'
 import { parseExif, stripExif, ExifInfo } from '../utils/exif'
 import { downloadBlob } from '../utils/image'
+import { toast } from '../utils/toast'
 
 export default function ExifViewerPage() {
   const [file, setFile] = useState<File | null>(null)
@@ -15,7 +16,7 @@ export default function ExifViewerPage() {
       const info = await parseExif(f)
       setExif(info)
     } catch (e) {
-      alert('Failed to read EXIF metadata')
+      toast('Failed to read EXIF metadata. Please try another file.', 'error')
     }
     setIsProcessing(false)
   }, [])
@@ -27,7 +28,7 @@ export default function ExifViewerPage() {
       const cleanBlob = await stripExif(file)
       downloadBlob(cleanBlob, `mediahub-clean-${file.name}`)
     } catch (e) {
-      alert('Failed to strip EXIF data')
+      toast('Failed to strip EXIF data. Please try again.', 'error')
     }
     setIsProcessing(false)
   }

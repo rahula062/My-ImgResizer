@@ -127,7 +127,7 @@ function App() {
         isOpen={mobileNavOpen}
         onClose={() => setMobileNavOpen(false)}
       />
-      <main id="main" className="flex-1">
+      <main className="flex-1">
         <header id="topbar">
           <button 
             id="hamburger"

@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import JSZip from 'jszip'
 import Dropzone from '../components/ui/Dropzone'
 import { loadImageFromFile, canvasToBlob, downloadBlob, formatBytes } from '../utils/image'
+import { toast } from '../utils/toast'
 
 interface ConvertItem {
   id: string
@@ -58,7 +59,7 @@ export default function ConvertPage() {
         const converted = await processConvert(item, targetFormat, quality)
         newItems.push(converted)
       } catch (e) {
-        console.error('Failed to load image for conversion:', f)
+        toast(`Failed to load ${f.name}`, 'error')
       }
     }
 

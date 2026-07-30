@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import JSZip from 'jszip'
 import Dropzone from '../components/ui/Dropzone'
 import { loadImageFromFile, canvasToBlob, downloadBlob, formatBytes } from '../utils/image'
+import { toast } from '../utils/toast'
 
 interface CompressItem {
   id: string
@@ -72,7 +73,7 @@ export default function CompressPage() {
         const processed = await processFile(item, quality, scale, targetFormat)
         newItems.push(processed)
       } catch (e) {
-        console.error('Failed to load image:', f.name)
+        toast(`Failed to load ${f.name}`, 'error')
       }
     }
 

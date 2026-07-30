@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import Dropzone from '../components/ui/Dropzone'
 import { loadImageFromFile, canvasToBlob, downloadBlob, formatBytes } from '../utils/image'
+import { toast } from '../utils/toast'
 
 export default function EnhancePage() {
   const [image, setImage] = useState<HTMLImageElement | null>(null)
@@ -20,7 +21,7 @@ export default function EnhancePage() {
       setImage(img)
       setFile(f)
     } catch (e) {
-      alert('Failed to load image')
+      toast('Failed to load image. Please try another file.', 'error')
     }
   }, [])
 
@@ -45,6 +46,15 @@ export default function EnhancePage() {
     setPreviewUrl(canvas.toDataURL(format, 0.92))
     canvas.toBlob((b) => b && setOutputSize(b.size), format, 0.92)
   }, [image, upscale, brightness, contrast, format])
+
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl)
+      }
+    }
+  }, [previewUrl])
 
   useEffect(() => {
     processEnhance()

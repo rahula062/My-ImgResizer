@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import Dropzone from '../components/ui/Dropzone'
 import { loadImageFromFile, canvasToBlob, downloadBlob, rotateAndFlip } from '../utils/image'
+import { toast } from '../utils/toast'
 
 export default function RotatePage() {
   const [image, setImage] = useState<HTMLImageElement | null>(null)
@@ -20,7 +21,7 @@ export default function RotatePage() {
       setFlipH(false)
       setFlipV(false)
     } catch (e) {
-      alert('Failed to load image')
+      toast('Failed to load image. Please try another file.', 'error')
     }
   }, [])
 
@@ -30,6 +31,15 @@ export default function RotatePage() {
     rotateAndFlip(canvas, image, angle, flipH, flipV)
     setPreviewUrl(canvas.toDataURL(format, 0.95))
   }, [image, angle, flipH, flipV, format])
+
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl)
+      }
+    }
+  }, [previewUrl])
 
   useEffect(() => {
     renderRotateCanvas()

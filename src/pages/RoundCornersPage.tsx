@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import Dropzone from '../components/ui/Dropzone'
 import { loadImageFromFile, canvasToBlob, downloadBlob, drawRoundedCorners } from '../utils/image'
+import { toast } from '../utils/toast'
 
 export default function RoundCornersPage() {
   const [image, setImage] = useState<HTMLImageElement | null>(null)
@@ -17,7 +18,7 @@ export default function RoundCornersPage() {
       const img = await loadImageFromFile(f)
       setImage(img)
     } catch (e) {
-      alert('Failed to load image')
+      toast('Failed to load image. Please try another file.', 'error')
     }
   }, [])
 
@@ -27,6 +28,15 @@ export default function RoundCornersPage() {
     drawRoundedCorners(canvas, image, radius, isCircle, bgColor)
     setPreviewUrl(canvas.toDataURL(format, 0.95))
   }, [image, radius, isCircle, bgColor, format])
+
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl)
+      }
+    }
+  }, [previewUrl])
 
   useEffect(() => {
     processCorners()

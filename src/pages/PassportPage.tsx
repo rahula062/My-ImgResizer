@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import Dropzone from '../components/ui/Dropzone'
 import { loadImageFromFile, canvasToBlob, downloadBlob } from '../utils/image'
+import { toast } from '../utils/toast'
 
 interface PassportPreset {
   country: string
@@ -34,7 +35,7 @@ export default function PassportPage() {
       const img = await loadImageFromFile(f)
       setImage(img)
     } catch (e) {
-      alert('Failed to load image')
+      toast('Failed to load image. Please try another file.', 'error')
     }
   }, [])
 
@@ -118,6 +119,15 @@ export default function PassportPage() {
 
     setPreviewUrl(canvas.toDataURL('image/jpeg', 0.95))
   }, [image, selectedPreset, bgColor, showGuide, sheetMode])
+
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl)
+      }
+    }
+  }, [previewUrl])
 
   useEffect(() => {
     renderPassportCanvas()

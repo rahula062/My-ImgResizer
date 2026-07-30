@@ -1,7 +1,8 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import JSZip from 'jszip'
 import Dropzone from '../components/ui/Dropzone'
 import { loadImageFromFile, canvasToBlob, downloadBlob, formatBytes } from '../utils/image'
+import { toast } from '../utils/toast'
 
 type BatchAction = 'resize' | 'convert' | 'compress' | 'rotate'
 
@@ -99,13 +100,24 @@ export default function BatchProcessPage() {
         const processed = await processSingleItem(item, action, targetWidth, targetFormat, quality, rotateAngle)
         newItems.push(processed)
       } catch (e) {
-        console.error('Failed to load image for batch:', f)
+        toast(`Failed to load ${f.name}`, 'error')
       }
     }
 
     setItems((prev) => [...prev, ...newItems])
     setIsProcessing(false)
   }, [action, targetWidth, targetFormat, quality, rotateAngle])
+
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      items.forEach((item) => {
+        if (item.processedUrl && item.processedUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(item.processedUrl)
+        }
+      })
+    }
+  }, [items])
 
   const runBatch = async (
     act: BatchAction,

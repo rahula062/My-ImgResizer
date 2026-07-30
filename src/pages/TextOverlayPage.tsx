@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import Dropzone from '../components/ui/Dropzone'
 import { loadImageFromFile, canvasToBlob, downloadBlob } from '../utils/image'
+import { toast } from '../utils/toast'
 
 export default function TextOverlayPage() {
   const [image, setImage] = useState<HTMLImageElement | null>(null)
@@ -21,7 +22,7 @@ export default function TextOverlayPage() {
       const img = await loadImageFromFile(f)
       setImage(img)
     } catch (e) {
-      alert('Failed to load image')
+      toast('Failed to load image. Please try another file.', 'error')
     }
   }, [])
 
@@ -57,6 +58,15 @@ export default function TextOverlayPage() {
 
     setPreviewUrl(canvas.toDataURL('image/png'))
   }, [image, text, fontFamily, fontSize, textColor, posX, posY, showBgBox, boxColor])
+
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl)
+      }
+    }
+  }, [previewUrl])
 
   useEffect(() => {
     renderTextOverlay()

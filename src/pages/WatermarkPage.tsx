@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import Dropzone from '../components/ui/Dropzone'
 import { loadImageFromFile, canvasToBlob, downloadBlob } from '../utils/image'
+import { toast } from '../utils/toast'
 
 type Position = 'top-left' | 'top-center' | 'top-right' | 'center' | 'bottom-left' | 'bottom-center' | 'bottom-right' | 'tile'
 
@@ -20,7 +21,7 @@ export default function WatermarkPage() {
       const img = await loadImageFromFile(f)
       setImage(img)
     } catch (e) {
-      alert('Failed to load image')
+      toast('Failed to load image. Please try another file.', 'error')
     }
   }, [])
 
@@ -75,6 +76,15 @@ export default function WatermarkPage() {
 
     setPreviewUrl(canvas.toDataURL('image/png'))
   }, [image, wmText, position, opacity, fontSize, textColor])
+
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl)
+      }
+    }
+  }, [previewUrl])
 
   useEffect(() => {
     processWatermark()

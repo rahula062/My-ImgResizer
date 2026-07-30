@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import Dropzone from '../components/ui/Dropzone'
 import { boostImageKb, formatBytes, downloadBlob } from '../utils/image'
+import { toast } from '../utils/toast'
 
 export default function IncreaseKbPage() {
   const [file, setFile] = useState<File | null>(null)
@@ -16,6 +17,15 @@ export default function IncreaseKbPage() {
     setTargetKb(Math.max(currentKb + 50, 100))
   }, [])
 
+  // Cleanup preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl)
+      }
+    }
+  }, [previewUrl])
+
   const handleIncreaseSize = async () => {
     if (!file) return
     setIsProcessing(true)
@@ -23,7 +33,7 @@ export default function IncreaseKbPage() {
       const padded = await boostImageKb(file, targetKb)
       setResultBlob(padded)
     } catch (e) {
-      alert('Failed to increase file size')
+      toast('Failed to increase file size. Please try again.', 'error')
     }
     setIsProcessing(false)
   }

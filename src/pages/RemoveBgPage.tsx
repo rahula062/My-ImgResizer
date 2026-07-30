@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import Dropzone from '../components/ui/Dropzone'
 import { loadImageFromFile, canvasToBlob, downloadBlob, removeBackgroundColor } from '../utils/image'
+import { toast } from '../utils/toast'
 
 export default function RemoveBgPage() {
   const [image, setImage] = useState<HTMLImageElement | null>(null)
@@ -17,7 +18,7 @@ export default function RemoveBgPage() {
       setImage(img)
       setFile(f)
     } catch (e) {
-      alert('Failed to load image')
+      toast('Failed to load image. Please try another file.', 'error')
     }
   }, [])
 
@@ -27,6 +28,15 @@ export default function RemoveBgPage() {
     removeBackgroundColor(canvas, image, targetColor, tolerance)
     setPreviewUrl(canvas.toDataURL('image/png'))
   }, [image, targetColor, tolerance])
+
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl)
+      }
+    }
+  }, [previewUrl])
 
   useEffect(() => {
     processRemoveBg()

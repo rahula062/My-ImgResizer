@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import Dropzone from '../components/ui/Dropzone'
 import { loadImageFromFile, canvasToBlob, downloadBlob, formatBytes } from '../utils/image'
+import { toast } from '../utils/toast'
 
 type AspectRatio = 'free' | '1:1' | '4:3' | '16:9' | '9:16' | '3:2'
 
@@ -26,7 +27,7 @@ export default function CropPage() {
       setFile(f)
       setCropBox({ x: 0.1, y: 0.1, w: 0.8, h: 0.8 })
     } catch (e) {
-      alert('Failed to load image')
+      toast('Failed to load image. Please try another file.', 'error')
     }
   }, [])
 
@@ -43,15 +44,15 @@ export default function CropPage() {
     const targetRatio = rW / rH
 
     let w = 0.8
-    let h = w / targetRatio * (image.naturalWidth / image.naturalHeight)
+    let h = w / targetRatio
 
-    if (h > 0.8) {
+    if (h > 0.9) {
       h = 0.8
-      w = h * targetRatio / (image.naturalWidth / image.naturalHeight)
+      w = h * targetRatio
     }
 
-    const x = (1 - w) / 2
-    const y = (1 - h) / 2
+    const x = Math.max(0, (1 - w) / 2)
+    const y = Math.max(0, (1 - h) / 2)
     setCropBox({ x, y, w, h })
   }
 
@@ -107,6 +108,15 @@ export default function CropPage() {
     setPreviewUrl(canvas.toDataURL(format, 0.92))
     canvas.toBlob((b) => b && setOutputSize(b.size), format, 0.92)
   }, [image, cropBox, mode, aspect, padColor, format])
+
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl)
+      }
+    }
+  }, [previewUrl])
 
   useEffect(() => {
     renderOutput()
