@@ -1,6 +1,6 @@
-# MediaHub — Professional Image & PDF Studio
+# Media Hub — Professional Image & PDF Studio
 
-**MediaHub** is a high-performance, 100% client-side web application for processing images and PDF documents directly inside your browser. No file uploads, no server storage, zero privacy risks.
+**Media Hub** is a high-performance, 100% client-side web application for processing images and PDF documents directly inside your browser. No file uploads, no server storage, zero privacy risks.
 
 ---
 

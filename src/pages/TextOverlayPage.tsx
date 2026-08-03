@@ -5,7 +5,7 @@ import { toast } from '../utils/toast'
 
 export default function TextOverlayPage() {
   const [image, setImage] = useState<HTMLImageElement | null>(null)
-  const [text, setText] = useState('MediaHub Text Overlay')
+  const [text, setText] = useState('Media Hub Text Overlay')
   const [fontFamily, setFontFamily] = useState('sans-serif')
   const [fontSize, setFontSize] = useState(42)
   const [textColor, setTextColor] = useState('#00f5d4')

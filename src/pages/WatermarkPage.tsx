@@ -7,7 +7,7 @@ type Position = 'top-left' | 'top-center' | 'top-right' | 'center' | 'bottom-lef
 
 export default function WatermarkPage() {
   const [image, setImage] = useState<HTMLImageElement | null>(null)
-  const [wmText, setWmText] = useState('© MediaHub Watermark')
+  const [wmText, setWmText] = useState('© Media Hub Watermark')
   const [position, setPosition] = useState<Position>('bottom-right')
   const [opacity, setOpacity] = useState(60)
   const [fontSize, setFontSize] = useState(48)
