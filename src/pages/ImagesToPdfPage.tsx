@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import Dropzone from '../components/ui/Dropzone'
 import { imagesToPdf } from '../utils/pdf'
 import { downloadBlob, formatBytes } from '../utils/image'
+import { toast } from '../utils/toast'
 
 interface ImageFileItem {
   id: string
@@ -53,7 +54,7 @@ export default function ImagesToPdfPage() {
       const pdfBlob = await imagesToPdf(files, pageSize, orientation, margin)
       downloadBlob(pdfBlob, 'mediahub-converted-images.pdf')
     } catch (e) {
-      alert('Failed to generate PDF')
+      toast('Failed to generate PDF. Please check your images and try again.', 'error')
       console.error(e)
     }
     setIsProcessing(false)

@@ -39,7 +39,7 @@ export default function PassportPage() {
     }
   }, [])
 
-  const renderPassportCanvas = useCallback(() => {
+  const renderPassportCanvasEx = useCallback((withGuides: boolean) => {
     if (!image || !canvasRef.current) return
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
@@ -63,7 +63,7 @@ export default function PassportPage() {
 
       ctx.drawImage(image, x, y, drawW, drawH)
 
-      if (showGuide) {
+      if (withGuides) {
         ctx.strokeStyle = '#00f5d4'
         ctx.lineWidth = 2
         ctx.beginPath()
@@ -118,7 +118,7 @@ export default function PassportPage() {
     }
 
     setPreviewUrl(canvas.toDataURL('image/jpeg', 0.95))
-  }, [image, selectedPreset, bgColor, showGuide, sheetMode])
+  }, [image, selectedPreset, bgColor, sheetMode])
 
   // Cleanup object URLs on unmount
   useEffect(() => {
@@ -130,13 +130,16 @@ export default function PassportPage() {
   }, [previewUrl])
 
   useEffect(() => {
-    renderPassportCanvas()
-  }, [renderPassportCanvas])
+    renderPassportCanvasEx(showGuide)
+  }, [renderPassportCanvasEx, showGuide])
 
   const handleDownload = async () => {
     if (!canvasRef.current) return
+    renderPassportCanvasEx(false) // Clean draw without guides for export
     const blob = await canvasToBlob(canvasRef.current, 'image/jpeg', 0.95)
-    downloadBlob(blob, `passport-${selectedPreset.country.replace(/[^a-zA-Z]/g, '')}-${sheetMode}.jpg`)
+    renderPassportCanvasEx(showGuide) // Restore preview state
+    const countryName = selectedPreset.country.toLowerCase().replace(/[^a-z0-9]/g, '')
+    downloadBlob(blob, `mediahub-passport-${countryName}-${sheetMode}.jpg`)
   }
 
   return (

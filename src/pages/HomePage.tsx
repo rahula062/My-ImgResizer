@@ -49,7 +49,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
         </p>
         <div className="hero-stats">
           <div className="stat">
-            <div className="stat-num">19</div>
+            <div className="stat-num">{tools.length}</div>
             <div className="stat-lbl">Tools</div>
           </div>
           <div className="stat">
